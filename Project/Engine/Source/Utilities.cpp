@@ -1,0 +1,59 @@
+#include <regex>
+#include <fstream>
+#include <filesystem>
+#include <Engine/Log.hpp>
+#include <Engine/Utilities.hpp>
+
+using namespace std;
+using namespace Engine;
+
+namespace fs = std::filesystem;
+
+string Engine::ReadText(std::string path)
+{
+	if (!fs::exists(path))
+	{
+		Log::Warning("Cannot read '" + path + "' - file does not exist");
+		return "";
+	}
+
+	// Open file for read and get size
+	ifstream filestream(path, ios::in | ios::binary);
+
+	// Get file length
+	streampos size = fs::file_size(path);
+
+	// Read in contents of file
+	string contents(size, '\0');
+	filestream.read(contents.data(), size);
+
+	// Convert CRLF -> LF
+	contents = regex_replace(contents, regex("\r\n"), "\n");
+
+	return contents;
+}
+
+vector<unsigned char> Engine::Read(std::string path)
+{
+	if (!fs::exists(path))
+	{
+		Log::Warning("Cannot read '" + path + "' - file does not exist");
+		return vector<unsigned char>();
+	}
+
+	ifstream filestream(path, ios::in | ios::binary);
+
+	// Get file length
+	filestream.seekg(0, ios::end);
+	size_t filesize = filestream.tellg();
+
+	filestream.seekg(0, ios::beg); // Go back to start
+
+	// Prepare vector
+	vector<unsigned char> contents(filesize);
+
+	filestream.read((char*)&contents[0], filesize);
+	filestream.close();
+
+	return contents;
+}

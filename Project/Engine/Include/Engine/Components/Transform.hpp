@@ -1,0 +1,32 @@
+#pragma once
+#include <vector>
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <Engine/Graphics/Shader.hpp>
+#include <Engine/Components/Component.hpp>
+
+namespace Engine::Components
+{
+	struct Transform : public Component
+	{
+		glm::vec3 Scale		= { 1, 1, 1 };
+		glm::vec3 Position	= { 0, 0, 0 };
+		glm::vec3 Rotation	= { 0, 0, 0 };
+
+		void AddChild(Transform* child);
+		void SetParent(Transform* parent);
+
+		glm::vec3 GetGlobalScale();
+		glm::vec3 GetGlobalPosition();
+		glm::vec3 GetGlobalRotation();
+
+		Transform* GetParent();
+		std::vector<Transform*> GetChildren();
+
+		void FillShader(Engine::Graphics::Shader* shader);
+
+	private:
+		Transform* m_Parent = nullptr;
+		std::vector<Transform*> m_Children;
+	};
+}

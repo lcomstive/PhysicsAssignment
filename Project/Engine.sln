@@ -1,0 +1,59 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32120.378
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Engine", "Engine\Engine.vcxproj", "{1EDA06B6-EC2E-4508-9EE7-24F1A83B8631}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GLFW", "Dependencies\GLFW\VS2022\GLFW.vcxproj", "{67DF7755-BCF7-4F05-A1B4-5CD7A5F4903A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dependencies", "Dependencies", "{98F10E37-379C-4204-8F32-126F7DEA4839}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ImGUI", "Dependencies\ImGUI\VS2022\ImGUI.vcxproj", "{DD4D824A-B4DA-4F8D-859B-14F71AB6CFA4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Applications", "Applications", "{9F7A7E61-42FF-47A4-B9BC-5C991BBF2EBB}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PhysicsDemo", "Applications\PhysicsDemo\PhysicsDemo.vcxproj", "{76086415-2B32-4ABA-B977-A277D1B91703}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "glad", "Dependencies\glad\glad.vcxproj", "{3E16E7FA-342A-48C1-B3EB-B08AB1DAB72C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1EDA06B6-EC2E-4508-9EE7-24F1A83B8631}.Debug|x64.ActiveCfg = Debug|x64
+		{1EDA06B6-EC2E-4508-9EE7-24F1A83B8631}.Debug|x64.Build.0 = Debug|x64
+		{1EDA06B6-EC2E-4508-9EE7-24F1A83B8631}.Release|x64.ActiveCfg = Release|x64
+		{1EDA06B6-EC2E-4508-9EE7-24F1A83B8631}.Release|x64.Build.0 = Release|x64
+		{67DF7755-BCF7-4F05-A1B4-5CD7A5F4903A}.Debug|x64.ActiveCfg = Debug|x64
+		{67DF7755-BCF7-4F05-A1B4-5CD7A5F4903A}.Debug|x64.Build.0 = Debug|x64
+		{67DF7755-BCF7-4F05-A1B4-5CD7A5F4903A}.Release|x64.ActiveCfg = Release|x64
+		{67DF7755-BCF7-4F05-A1B4-5CD7A5F4903A}.Release|x64.Build.0 = Release|x64
+		{DD4D824A-B4DA-4F8D-859B-14F71AB6CFA4}.Debug|x64.ActiveCfg = Debug|x64
+		{DD4D824A-B4DA-4F8D-859B-14F71AB6CFA4}.Debug|x64.Build.0 = Debug|x64
+		{DD4D824A-B4DA-4F8D-859B-14F71AB6CFA4}.Release|x64.ActiveCfg = Release|x64
+		{DD4D824A-B4DA-4F8D-859B-14F71AB6CFA4}.Release|x64.Build.0 = Release|x64
+		{76086415-2B32-4ABA-B977-A277D1B91703}.Debug|x64.ActiveCfg = Debug|x64
+		{76086415-2B32-4ABA-B977-A277D1B91703}.Debug|x64.Build.0 = Debug|x64
+		{76086415-2B32-4ABA-B977-A277D1B91703}.Release|x64.ActiveCfg = Release|x64
+		{76086415-2B32-4ABA-B977-A277D1B91703}.Release|x64.Build.0 = Release|x64
+		{3E16E7FA-342A-48C1-B3EB-B08AB1DAB72C}.Debug|x64.ActiveCfg = Debug|x64
+		{3E16E7FA-342A-48C1-B3EB-B08AB1DAB72C}.Debug|x64.Build.0 = Debug|x64
+		{3E16E7FA-342A-48C1-B3EB-B08AB1DAB72C}.Release|x64.ActiveCfg = Release|x64
+		{3E16E7FA-342A-48C1-B3EB-B08AB1DAB72C}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{67DF7755-BCF7-4F05-A1B4-5CD7A5F4903A} = {98F10E37-379C-4204-8F32-126F7DEA4839}
+		{DD4D824A-B4DA-4F8D-859B-14F71AB6CFA4} = {98F10E37-379C-4204-8F32-126F7DEA4839}
+		{76086415-2B32-4ABA-B977-A277D1B91703} = {9F7A7E61-42FF-47A4-B9BC-5C991BBF2EBB}
+		{3E16E7FA-342A-48C1-B3EB-B08AB1DAB72C} = {98F10E37-379C-4204-8F32-126F7DEA4839}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E16E2349-1DC5-4276-9A78-F0011AD1377F}
+	EndGlobalSection
+EndGlobal
