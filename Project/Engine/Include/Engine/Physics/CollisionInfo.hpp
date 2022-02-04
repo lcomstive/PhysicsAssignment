@@ -6,29 +6,32 @@ namespace Engine::Components { struct Rigidbody; }
 
 namespace Engine::Physics
 {
-	struct CollisionInfo
-	{
-		glm::vec3 A = { 0, 0, 0 };		// Furthest point of A into B
-		glm::vec3 B = { 0, 0, 0 };		// Furthest point of B into A
-		glm::vec3 Normal = { 0, 0, 0 };	// B - A normalised
-		float Depth = 0;				// Length of B - A
-		bool HasCollided = false;		// Has a collision occurred?
-	};
+#pragma region Collision Tests
+	bool TestSphereBoxCollider(Sphere a, OBB b);
+	bool TestSphereBoxCollider(Sphere a, AABB b);
+	bool TestSpherePlaneCollider(Sphere a, Plane b);
+	bool TestSphereSphereCollider(Sphere a, Sphere b);
 
-	struct Collision
-	{
-		Engine::Components::Rigidbody* RigidbodyA;
-		Engine::Components::Rigidbody* RigidbodyB;
-		CollisionInfo Info;
-	};
-
-	Collision TestSphereBoxCollider(Sphere a, Engine::Components::Rigidbody* aRb, OBB b, Engine::Components::Rigidbody* bRb);
-	Collision TestSpherePlaneCollider(Sphere a, Engine::Components::Rigidbody* aRb, Plane b, Engine::Components::Rigidbody* bRb);
-	Collision TestSphereSphereCollider(Sphere a, Engine::Components::Rigidbody* aRb, Sphere b, Engine::Components::Rigidbody* bRb);
-
-	Collision TestBoxBoxCollider(AABB a, Engine::Components::Rigidbody* aRb, OBB b, Engine::Components::Rigidbody* bRb);
-	Collision TestBoxBoxCollider(OBB a, Engine::Components::Rigidbody* aRb, OBB b, Engine::Components::Rigidbody* bRb);
-	Collision TestBoxPlaneCollider(OBB a, Engine::Components::Rigidbody* aRb, Plane b, Engine::Components::Rigidbody* bRb);
+	bool TestBoxBoxCollider(OBB a, OBB b);
+	bool TestBoxBoxCollider(AABB a, OBB b);
+	bool TestBoxBoxCollider(AABB a, AABB b);
+	bool TestBoxPlaneCollider(OBB a, Plane b);
 	
-	Collision TestPlanePlaneCollider(Plane a, Engine::Components::Rigidbody* aRb, Plane b, Engine::Components::Rigidbody* bRb);
+	bool TestPlanePlaneCollider(Plane a, Plane b);
+#pragma endregion
+
+#pragma region Collision Manifolds
+	struct CollisionManifold
+	{
+		bool IsColliding = false;
+		glm::vec3 Normal = { 0, 0, 1 };
+		float PenetrationDepth = FLT_MAX;
+		std::vector<glm::vec3> Contacts = {};
+	};
+
+	CollisionManifold FindCollisionFeatures(OBB a, OBB b);
+	CollisionManifold FindCollisionFeatures(OBB a, Sphere b);
+	CollisionManifold FindCollisionFeatures(Sphere a, Sphere b);
+	CollisionManifold FindCollisionFeatures(Engine::Components::Rigidbody* a, Engine::Components::Rigidbody* b);
+#pragma endregion
 }

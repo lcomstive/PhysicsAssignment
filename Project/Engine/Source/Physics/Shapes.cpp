@@ -1,12 +1,14 @@
+#include <Engine/Utilities.hpp>
 #include <Engine/Physics/Shapes.hpp>
 
+using namespace std;
 using namespace glm;
 using namespace Engine::Physics;
 
 vec3 Engine::Physics::project(vec3& length, vec3& direction)
 {
 	float _dot = dot(length, direction);
-	float magSq = dot(_dot, _dot);
+	float magSq = MagnitudeSqr(direction);
 	return direction * (_dot / magSq);
 }
 
@@ -140,7 +142,7 @@ bool AABB::Raycast(Ray& ray, RaycastHit* outResult)
 			{  0,  0, -1 }, { 0, 0, 0 },
 		};
 		for (int i = 0; i < 6; i++)
-			if (fabsf(outResult->Distance - t[i]) < 0.0001f)
+			if (BasicallyZero(outResult->Distance - t[i]))
 				outResult->Normal = normals[i];
 	}
 	return true;
@@ -228,8 +230,8 @@ Interval OBB::GetInterval(const vec3& axis)
 	for (int i = 0; i < 8; i++)
 	{
 		float projection = dot(axis, vertices[i]);
-		result.Min = min(projection, result.Min);
-		result.Max = max(projection, result.Max);
+		result.Min = std::min(projection, result.Min);
+		result.Max = std::max(projection, result.Max);
 	}
 	return result;
 }
@@ -270,7 +272,7 @@ bool OBB::Raycast(Ray& ray, RaycastHit* outResult)
 	vec3 size = Extents * 2.0f;
 	for (int i = 0; i < 3; i++)
 	{
-		if (fabsf(f[i]) < 0.0001f)
+		if (BasicallyZero(f[i]))
 		{
 			if (-e[i] - size[i] > 0 ||
 				-e[i] + size[i] < 0)
@@ -312,7 +314,7 @@ bool OBB::Raycast(Ray& ray, RaycastHit* outResult)
 			z, z * -1.0f
 		};
 		for (int i = 0; i < 6; i++)
-			if (fabsf(outResult->Distance - t[i]) < 0.0001f)
+			if (BasicallyZero(outResult->Distance - t[i]))
 				outResult->Normal = normals[i];
 	}
 
@@ -330,7 +332,142 @@ bool OBB::LineTest(Line& line)
 	if (!Raycast(ray, &hit))
 		return false;
 
-	return hit.Distance >= 0 && hit.Distance <= line.Length();
+	return hit.Distance >= 0 && (hit.Distance * hit.Distance) <= line.LengthSqr();
+}
+
+vector<Line> OBB::GetEdges()
+{
+	vector<Line> lines;
+	lines.reserve(12);
+
+	vector<vec3> verts = GetVertices();
+	int indices[][2] =
+	{
+		{ 6, 1 }, { 6, 3 }, { 6, 4 }, { 2, 7 }, { 2, 5 }, { 2, 0 },
+		{ 0, 1 }, { 0, 3 }, { 7, 1 }, { 7, 4 }, { 4, 5 }, { 5, 3 }
+	};
+	for (int j = 0; j < 12; j++)
+		lines.emplace_back(Line
+		{
+			verts[indices[j][0]],
+			verts[indices[j][1]]
+		});
+
+	return lines;
+}
+
+vector<Plane> OBB::GetPlanes()
+{
+	vec3 c = Position;
+	vec3 e = Extents;
+	
+	// Axis
+	vec3 a[] =
+	{
+		Orientation[0],
+		Orientation[1],
+		Orientation[2]
+	};
+
+	vector<Plane> result;
+	result.resize(6);
+
+	result[0] = Plane(a[0]        ,  dot(a[0], (c + a[0] * e.x)));
+	result[1] = Plane(a[0] * -1.0f, -dot(a[0], (c - a[0] * e.x)));
+	result[2] = Plane(a[1]        ,  dot(a[1], (c + a[0] * e.y)));
+	result[3] = Plane(a[1] * -1.0f, -dot(a[1], (c - a[0] * e.y)));
+	result[4] = Plane(a[2]        ,  dot(a[2], (c + a[0] * e.z)));
+	result[5] = Plane(a[2] * -1.0f, -dot(a[2], (c - a[0] * e.z)));
+
+	return result;
+}
+
+vector<vec3> OBB::GetVertices()
+{
+	vector<vec3> verts;
+	verts.resize(8);
+
+	// Axis
+	vec3 a[] =
+	{
+		Orientation[0],
+		Orientation[1],
+		Orientation[2]
+	};
+
+	vec3 c = Position;
+	vec3 e = Extents;
+	verts[0] = c + a[0] * e[0] + a[1] * e[1] + a[2] * e[2];
+	verts[1] = c - a[0] * e[0] + a[1] * e[1] + a[2] * e[2];
+	verts[2] = c + a[0] * e[0] - a[1] * e[1] + a[2] * e[2];
+	verts[3] = c + a[0] * e[0] + a[1] * e[1] - a[2] * e[2];
+	verts[4] = c - a[0] * e[0] - a[1] * e[1] - a[2] * e[2];
+	verts[5] = c + a[0] * e[0] - a[1] * e[1] - a[2] * e[2];
+	verts[6] = c - a[0] * e[0] + a[1] * e[1] - a[2] * e[2];
+	verts[7] = c - a[0] * e[0] - a[1] * e[1] + a[2] * e[2];
+
+	return verts;
+}
+
+vector<vec3> OBB::ClipEdges(vector<Line> edges)
+{
+	vector<vec3> results;
+	results.reserve(edges.size());
+
+	vec3 intersection;
+	vector<Plane> planes = GetPlanes();
+
+	for (uint32_t i = 0; i < (uint32_t)planes.size(); i++)
+	{
+		for (uint32_t j = 0; j < (uint32_t)edges.size(); j++)
+		{
+			if (ClipToPlane(planes[i], edges[j], &intersection) &&
+				IsPointInside(intersection))
+				results.emplace_back(intersection);
+		}
+	}
+
+	return results;
+}
+
+bool OBB::ClipToPlane(Plane& plane, Line& line, vec3* result)
+{
+	vec3 ab = line.End - line.Start;
+	float nAB = dot(plane.Normal, ab);
+	if (BasicallyZero(nAB))
+		return false; // No intersection occurs
+
+	float nA = dot(plane.Normal, line.Start);
+	float t = (plane.Distance - nA) / nAB;
+	if (t >= 0.0f && t <= 1.0f)
+	{
+		if (result)
+			*result = line.Start + ab * t;
+		return true;
+	}
+	return false;
+}
+
+float OBB::PenetrationDepth(OBB& other, vec3& axis, bool* outShouldFlip)
+{
+	Interval i1 = GetInterval(normalize(axis));
+	Interval i2 = other.GetInterval(normalize(axis));
+
+	if (!((i2.Min <= i1.Max) && (i1.Min <= i2.Max)))
+		return 0;
+
+	float len1 = i1.Max - i1.Min;
+	float len2 = i2.Max - i2.Min;
+
+	float min = fminf(i1.Min, i2.Min);
+	float max = fmaxf(i1.Max, i2.Max);
+
+	float length = max - min;
+
+	if (outShouldFlip)
+		*outShouldFlip = i2.Min < i1.Min;
+
+	return (len1 + len2) - length;
 }
 #pragma endregion
 
@@ -349,7 +486,7 @@ bool Sphere::Raycast(Ray& ray, RaycastHit* outResult)
 		*outResult = RaycastHit{}; // Set to initial values
 
 	vec3 direction = Position - ray.Origin;
-	float magnitudeSqr = dot(direction, direction);
+	float magnitudeSqr = MagnitudeSqr(direction);
 	float rSqr = Radius * Radius;
 	float a = dot(direction, normalize(ray.Direction));
 	float bSqr = magnitudeSqr - (a * a);
@@ -381,13 +518,9 @@ bool Sphere::LineTest(Line& line)
 #pragma region Line
 Line::Line(vec3 start, vec3 end) : Start(start), End(end) { }
 
-float Line::Length() { return length(Start - End); }
-
-bool Line::IsPointOn(vec3& point)
-{
-	vec3 closestPoint = GetClosestPoint(point);
-	return abs(distance(point, closestPoint) < 0.001f);
-}
+float Line::Length() { return Magnitude(Start - End); }
+float Line::LengthSqr() { return MagnitudeSqr(Start - End); }
+bool Line::IsPointOn(vec3& point) { return BasicallyZero(MagnitudeSqr(GetClosestPoint(point))); }
 
 vec3 Line::GetClosestPoint(vec3& point)
 {
@@ -409,7 +542,7 @@ Plane::Plane(Triangle& tri)
 PlaneIntersection Plane::CheckPoint(vec3 point)
 {
 	float direction = dot(point, Normal) - Distance;
-	if (abs(direction) < 0.001f) return PlaneIntersection::Intersecting;
+	if (BasicallyZero(direction)) return PlaneIntersection::Intersecting;
 	if (direction < 0) return PlaneIntersection::Behind;
 	if (direction > 0) return PlaneIntersection::InFront;
 	return PlaneIntersection::None;
@@ -451,17 +584,14 @@ bool Plane::LineTest(Line& line)
 	float nA = dot(Normal, line.Start);
 	float nDirection = dot(Normal, direction);
 
-	if (fabsf(nDirection) < 0.0001f)
+	if (BasicallyZero(nDirection))
 		return false; // Line runs parrallel to plane, exit
 
 	float t = (Distance - nA) / nDirection;
 	return t >= 0.0f && t <= 1.0f;
 }
 
-float Plane::PlaneEquation(glm::vec3 point)
-{
-	return dot(point, Normal) - Distance;
-}
+float Plane::PlaneEquation(glm::vec3 point) { return dot(point, Normal) - Distance; }
 #pragma endregion
 
 #pragma region Ray
@@ -470,13 +600,13 @@ bool Ray::IsPointOn(vec3& point)
 	if (point == Origin)
 		return true;
 	vec3 normal = normalize(point - Origin);
-	return abs(dot(normal, Direction)) < 0.001f;
+	return BasicallyZero(dot(normal, Direction));
 }
 
 vec3 Ray::GetClosestPoint(vec3& point)
 {
 	float t = dot(point - Origin, normalize(Direction));
-	t = max(t, 0.0f);
+	t = std::max(t, 0.0f);
 	return Origin + Direction * t;
 }
 
@@ -516,9 +646,9 @@ vec3 Triangle::GetClosestPoint(vec3& point)
 	vec3 c2 = Line(B, C).GetClosestPoint(point);
 	vec3 c3 = Line(C, A).GetClosestPoint(point);
 
-	float magSq1 = dot(point - c1, point - c1);
-	float magSq2 = dot(point - c2, point - c2);
-	float magSq3 = dot(point - c3, point - c3);
+	float magSq1 = MagnitudeSqr(point - c1);
+	float magSq2 = MagnitudeSqr(point - c2);
+	float magSq3 = MagnitudeSqr(point - c3);
 
 	if (magSq1 < magSq2 && magSq1 < magSq3)
 		return c1;
@@ -530,7 +660,7 @@ vec3 Triangle::GetClosestPoint(vec3& point)
 bool Triangle::Intersects(Sphere& sphere)
 {
 	vec3 closest = GetClosestPoint(sphere.Position);
-	float magSq = dot(closest - sphere.Position, closest - sphere.Position);
+	float magSq = MagnitudeSqr(closest - sphere.Position);
 	return magSq <= (sphere.Radius * sphere.Radius);
 }
 
@@ -596,9 +726,9 @@ bool Triangle::Intersects(Plane& plane)
 	float side2 = plane.PlaneEquation(B);
 	float side3 = plane.PlaneEquation(C);
 
-	if (fabsf(side1) < 0.0001f &&
-		fabsf(side2) < 0.0001f &&
-		fabsf(side3) < 0.0001f)
+	if (BasicallyZero(side1) &&
+		BasicallyZero(side2) &&
+		BasicallyZero(side3))
 		return true; // All points are on the plane
 
 	if ((side1 > 0 && side2 > 0 && side3 > 0) ||
@@ -676,11 +806,11 @@ vec3 Triangle::SatCrossEdge(vec3& a, vec3& b, vec3& c, vec3& d)
 	vec3 ab = a - b;
 	vec3 cd = c - d;
 	vec3 result = cross(ab, cd);
-	if (fabsf(dot(result, result)) > 0.0001f)
+	if (BasicallyZero(MagnitudeSqr(result)))
 		return result; // Not parrallel
 	vec3 axis = cross(ab, c - a);
 	result = cross(ab, axis);
-	if (fabsf(dot(result, result)) > 0.0001f)
+	if (BasicallyZero(MagnitudeSqr(result)))
 		return result; // Now not parrallel
 	return { 0, 0, 0 }; // No way to get proper cross product
 }
@@ -712,7 +842,7 @@ vec3 Triangle::Barycentric(vec3& point)
 bool Triangle::Raycast(Ray& ray, RaycastHit* outResult)
 {
 	if (outResult)
-		*outResult = RaycastHit {}; // Reset to initial values
+		*outResult = RaycastHit{}; // Reset to initial values
 
 	Plane plane(*this);
 	RaycastHit hit;

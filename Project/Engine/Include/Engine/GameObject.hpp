@@ -41,14 +41,14 @@ namespace Engine
 			Log::Assert(std::is_base_of<Components::Component, T>(), "Added components need to derive from Engine::Components::Component");
 
 			std::type_index type = typeid(T);
+			Engine::Components::Component* instance = nullptr;
 
 			// Check for existing component attached
-			const auto& it = m_Components.find(type);
-			if (it != m_Components.end())
-				return (T*)it->second;
+			if (instance = GetComponent<T>(true)) // Also checks inherited components
+				return (T*)instance;
 
 			// Create & attach new component
-			Engine::Components::Component* instance = new T();
+			instance = new T();
 			instance->m_GameObject = this;
 			instance->Added();
 			m_Components.emplace(type, instance);
@@ -165,6 +165,30 @@ namespace Engine
 			}
 
 			return components;
+		}
+
+		template<typename T>
+		bool HasComponent(bool checkInheritedClasses = false)
+		{
+			if (!std::is_base_of<Components::Component, T>())
+			{
+				Log::Warning("Tried checking component that did not derive from Engine::Components::Component");
+				return false;
+			}
+
+			const auto& it = m_Components.find(typeid(T));
+			if (it != m_Components.end())
+				return true;
+			else if (!checkInheritedClasses)
+				return false;
+
+			// Check inherited classes
+			for (auto& pair : m_Components)
+			{
+				if (dynamic_cast<T*>(pair.second))
+					return true;
+			}
+			return false;
 		}
 	};
 }

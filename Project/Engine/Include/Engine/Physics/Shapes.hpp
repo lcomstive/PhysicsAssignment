@@ -1,9 +1,11 @@
 #pragma once
+#include <vector>
 #include <glm/glm.hpp>
 
 namespace Engine::Physics
 {
 	struct Ray;
+	struct Line;
 	struct Plane;
 
 	glm::vec3 project(glm::vec3& length, glm::vec3& direction);
@@ -22,6 +24,7 @@ namespace Engine::Physics
 		Line(glm::vec3 start, glm::vec3 end);
 
 		float Length();
+		float LengthSqr();
 
 		bool IsPointOn(glm::vec3& point);
 		glm::vec3 GetClosestPoint(glm::vec3& point);
@@ -58,7 +61,7 @@ namespace Engine::Physics
 		glm::vec3 Min();
 		glm::vec3 Max();
 
-		AABB FromMinMax(glm::vec3 min, glm::vec3 max);
+		static AABB FromMinMax(glm::vec3 min, glm::vec3 max);
 
 		bool Intersects(AABB& other);
 		bool IsPointInside(glm::vec3& point);
@@ -85,6 +88,14 @@ namespace Engine::Physics
 		glm::vec3 GetClosestPoint(glm::vec3& point);
 		Interval GetInterval(const glm::vec3& axis);
 		bool OverlapOnAxis(OBB& other, glm::vec3& axis);
+
+		std::vector<Line> GetEdges();
+		std::vector<Plane> GetPlanes();
+		std::vector<glm::vec3> GetVertices();
+		
+		std::vector<glm::vec3> ClipEdges(std::vector<Line> edges);
+		bool ClipToPlane(Plane& plane, Line& line, glm::vec3* result);
+		float PenetrationDepth(OBB& other, glm::vec3& axis, bool* outShouldFlip);
 
 		/// <returns>Success state of raycast</returns>
 		bool Raycast(Ray& ray, RaycastHit* outResult = nullptr);

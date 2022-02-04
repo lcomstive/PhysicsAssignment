@@ -33,37 +33,32 @@ OBB PlaneCollider::GetBounds() const
 	};
 }
 
-bool PlaneCollider::IsPointInside(glm::vec3 point) const { return BuildPlane().CheckPoint(point) == PlaneIntersection::Intersecting; }
+bool PlaneCollider::LineTest(Line& line) { return BuildPlane().LineTest(line); }
 bool PlaneCollider::Raycast(Ray& ray, RaycastHit* outResult) { return BuildPlane().Raycast(ray, outResult); }
+bool PlaneCollider::IsPointInside(glm::vec3 point) const { return BuildPlane().CheckPoint(point) == PlaneIntersection::Intersecting; }
 
-Collision PlaneCollider::CheckCollision(const Collider* other) const { return other->CheckCollision(this); }
+bool PlaneCollider::CheckCollision(const Collider* other) const { return other->CheckCollision(this); }
 
-Collision PlaneCollider::CheckCollision(const BoxCollider* other) const
+bool PlaneCollider::CheckCollision(const BoxCollider* other) const
 {
 	return TestBoxPlaneCollider(
 		other->BuildOBB(),
-		other->GetRigidbody(),
-		BuildPlane(),
-		GetRigidbody()
+		BuildPlane()
 	);
 }
 
-Collision PlaneCollider::CheckCollision(const SphereCollider* other) const
+bool PlaneCollider::CheckCollision(const SphereCollider* other) const
 {
 	return TestSpherePlaneCollider(
 		other->BuildSphere(),
-		other->GetRigidbody(),
-		BuildPlane(),
-		GetRigidbody()
+		BuildPlane()
 	);
 }
 
-Collision PlaneCollider::CheckCollision(const PlaneCollider* other) const
+bool PlaneCollider::CheckCollision(const PlaneCollider* other) const
 {
 	return TestPlanePlaneCollider(
 		BuildPlane(),
-		GetRigidbody(),
-		other->BuildPlane(),
-		other->GetRigidbody()
+		other->BuildPlane()
 	);
 }

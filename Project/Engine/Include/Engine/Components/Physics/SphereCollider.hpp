@@ -13,12 +13,13 @@ namespace Engine::Components
 		void DrawGizmos() override;
 
 		Physics::OBB GetBounds() const override;
+		bool LineTest(Physics::Line& line) override;
 		bool IsPointInside(glm::vec3 point) const override;
 		bool Raycast(Physics::Ray& ray, Physics::RaycastHit* outResult) override;
 
-		Physics::Collision CheckCollision(const Collider* other) const override;
-		Physics::Collision CheckCollision(const BoxCollider* other) const override;
-		Physics::Collision CheckCollision(const PlaneCollider* other) const override;
-		Physics::Collision CheckCollision(const SphereCollider* other) const override;
+		bool CheckCollision(const Collider* other) const override;
+		bool CheckCollision(const BoxCollider* other) const override;
+		bool CheckCollision(const PlaneCollider* other) const override;
+		bool CheckCollision(const SphereCollider* other) const override;
 	};
 }

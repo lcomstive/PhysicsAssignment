@@ -35,39 +35,34 @@ OBB BoxCollider::BuildOBB() const
 	};
 }
 
+bool BoxCollider::LineTest(Physics::Line& line) { return BuildOBB().LineTest(line); }
 bool BoxCollider::Raycast(Ray& ray, RaycastHit* outResult) { return BuildOBB().Raycast(ray, outResult); }
 
 OBB BoxCollider::GetBounds() const { return BuildOBB(); }
 bool BoxCollider::IsPointInside(glm::vec3 point) const { return BuildOBB().IsPointInside(point); }
 
-Collision BoxCollider::CheckCollision(const Collider* other) const { return other->CheckCollision(this); }
+bool BoxCollider::CheckCollision(const Collider* other) const { return other->CheckCollision(this); }
 
-Collision BoxCollider::CheckCollision(const BoxCollider* other) const
+bool BoxCollider::CheckCollision(const BoxCollider* other) const
 {
 	return TestBoxBoxCollider(
 		BuildOBB(),
-		GetRigidbody(),
-		other->BuildOBB(),
-		other->GetRigidbody()
+		other->BuildOBB()
 	);
 }
 
-Collision BoxCollider::CheckCollision(const SphereCollider* other) const
+bool BoxCollider::CheckCollision(const SphereCollider* other) const
 {
 	return TestSphereBoxCollider(
 		other->BuildSphere(),
-		other->GetRigidbody(),
-		BuildOBB(),
-		GetRigidbody()
+		BuildOBB()
 	);
 }
 
-Collision BoxCollider::CheckCollision(const PlaneCollider* other) const
+bool BoxCollider::CheckCollision(const PlaneCollider* other) const
 {
 	return TestBoxPlaneCollider(
 		BuildOBB(),
-		GetRigidbody(),
-		other->BuildPlane(),
-		other->GetRigidbody()
+		other->BuildPlane()
 	);
 }

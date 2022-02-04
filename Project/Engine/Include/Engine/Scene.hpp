@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <Engine/GameObject.hpp>
+#include <Engine/Physics/Octree.hpp>
 #include <Engine/Physics/PhysicsSystem.hpp>
 
 namespace Engine

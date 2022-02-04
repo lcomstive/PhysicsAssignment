@@ -214,8 +214,8 @@ void Application::SetFullscreen(bool fullscreen)
 	glfwSetWindowMonitor(
 		m_Window,
 		fullscreen ? monitor : nullptr,
-		fullscreen ? 0 : (videoMode->width  / 2.0f - m_Args.Resolution.x / 2.0f),
-		fullscreen ? 0 : (videoMode->height / 2.0f - m_Args.Resolution.y / 2.0f),
+		fullscreen ? 0 : int(videoMode->width  / 2.0f - m_Args.Resolution.x / 2.0f),
+		fullscreen ? 0 : int(videoMode->height / 2.0f - m_Args.Resolution.y / 2.0f),
 		m_Args.Resolution.x,
 		m_Args.Resolution.y,
 		videoMode->refreshRate

@@ -57,3 +57,10 @@ vector<unsigned char> Engine::Read(std::string path)
 
 	return contents;
 }
+
+float Engine::Magnitude(glm::vec3 vector) { return sqrt(MagnitudeSqr(vector)); }
+float Engine::MagnitudeSqr(glm::vec3 v) { return v.x * v.x + v.y * v.y + v.z * v.z; }
+
+bool Engine::BasicallyZero(float f) { return fabsf(f) < 0.00001f; }
+
+float Engine::Random(float min, float max) { return min + ((float)rand() / (float)RAND_MAX) * (max - min); }

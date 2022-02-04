@@ -13,7 +13,7 @@ void main()
 	vec3 WorldPos = normalize(WorldPos);
 	vec3 Normals = normalize(Normals);
 
-	FragColour = vec4(1.0);
+	FragColour = albedoColour;
 	
 	// Check for alpha clipping
 	if(alphaClipping && FragColour.a <= alphaClipThreshold)

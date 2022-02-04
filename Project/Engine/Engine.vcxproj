@@ -207,6 +207,7 @@
     <ClCompile Include="Source\Components\Light.cpp" />
     <ClCompile Include="Source\Components\Physics\BoxCollider.cpp" />
     <ClCompile Include="Source\Components\Physics\Collider.cpp" />
+    <ClCompile Include="Source\Components\Physics\Particle.cpp" />
     <ClCompile Include="Source\Components\Physics\PlaneCollider.cpp" />
     <ClCompile Include="Source\Components\Physics\Rigidbody.cpp" />
     <ClCompile Include="Source\Components\Physics\SphereCollider.cpp" />
@@ -228,6 +229,7 @@
     <ClCompile Include="Source\Graphics\Texture.cpp" />
     <ClCompile Include="Source\Input.cpp" />
     <ClCompile Include="Source\Log.cpp" />
+    <ClCompile Include="Source\Physics\Octree.cpp" />
     <ClCompile Include="Source\Physics\Shapes.cpp" />
     <ClCompile Include="Source\Physics\CollisionInfo.cpp" />
     <ClCompile Include="Source\Physics\PhysicsSystem.cpp" />
@@ -244,6 +246,7 @@
     <ClInclude Include="Include\Engine\Components\Light.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\BoxCollider.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\Collider.hpp" />
+    <ClInclude Include="Include\Engine\Components\Physics\Particle.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\PlaneCollider.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\Rigidbody.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\SphereCollider.hpp" />
@@ -265,6 +268,7 @@
     <ClInclude Include="Include\Engine\Graphics\Texture.hpp" />
     <ClInclude Include="Include\Engine\Input.hpp" />
     <ClInclude Include="Include\Engine\Log.hpp" />
+    <ClInclude Include="Include\Engine\Physics\Octree.hpp" />
     <ClInclude Include="Include\Engine\Physics\Shapes.hpp" />
     <ClInclude Include="Include\Engine\Physics\CollisionInfo.hpp" />
     <ClInclude Include="Include\Engine\Physics\PhysicsSystem.hpp" />

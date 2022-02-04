@@ -1,9 +1,11 @@
 #include <imgui.h>
 #include "PhysicsDemo.hpp"
+#include <Engine/Utilities.hpp>
 #include <Engine/Physics/Shapes.hpp>
 #include <Engine/Graphics/Gizmos.hpp>
 #include <Engine/Components/Camera.hpp>
 #include <Engine/Graphics/Renderer.hpp>
+#include <Engine/Components/Physics/Particle.hpp>
 #include <Engine/Components/Physics/Rigidbody.hpp>
 #include <Engine/Components/Graphics/MeshRenderer.hpp>
 
@@ -26,6 +28,9 @@ Shader* defaultShader = nullptr;
 
 void PhysicsDemo::OnStart()
 {
+	vec3 center = { 0, 0, 0 };
+	// CurrentScene()->GetPhysics().Accelerate(center, 1000.0f, 10);
+
 	// Default Cube Mesh //
 	MeshRenderer::MeshInfo meshInfo;
 	meshInfo.Mesh = Mesh::Cube();
@@ -36,56 +41,36 @@ void PhysicsDemo::OnStart()
 	floor->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 	floor->AddComponent<BoxCollider>();
 	floor->GetTransform()->Position.y = -3.0f;
-	floor->GetTransform()->Scale = { 10, 0.5f, 10 };
+	floor->GetTransform()->Scale = { 50, 0.5f, 50 };
 
 	// Main Camera //
 	GameObject* cameraObj = new GameObject(CurrentScene(), "Main Camera");
 	Camera* camera = cameraObj->AddComponent<Camera>();
-	cameraObj->GetTransform()->Position = { 0, 0, 10 };
+	cameraObj->GetTransform()->Position = { 0, 0, 20 };
 	cameraObj->GetTransform()->Rotation = { 0, radians(-90.0f), 0 }; // From euler angles
 
-	// Cube
-	GameObject* physicsObj = new GameObject(CurrentScene(), "Cube");
-	// physicsObj->AddComponent<Rigidbody>();
-	physicsObj->AddComponent<BoxCollider>();
-	physicsObj->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+	meshInfo.Material.Albedo = { 1, 0, 0, 1 };
 
-	// Sphere
-	physicsObj = new GameObject(CurrentScene(), "Sphere");
-	physicsObj->AddComponent<SphereCollider>();
-	meshInfo.Mesh = Mesh::Sphere();
-	physicsObj->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
-	
-	physicsObj->GetTransform()->Position = { 2, 2, 0 };
-	
-	// Plane
-	physicsObj = new GameObject(CurrentScene(), "Plane");
-
-	PlaneCollider* planeCollider = physicsObj->AddComponent<PlaneCollider>();
-	planeCollider->Normal = normalize(vec3{ 0.5f, 0, 0.5f });
-	planeCollider->Distance = -10.0f;
-
-	const int GridSize = 15;
-	for (int x = -GridSize; x < GridSize; x++)
+	const int TowerSize = 1;
+	for (int y = 0; y < TowerSize; y++)
 	{
-		for (int y = -GridSize; y < GridSize; y++)
-		{
-			GameObject* go = new GameObject(CurrentScene(), "GameObject " + to_string(x) + "," + to_string(y));
-			go->GetTransform()->Position = { x * 2.5f, y * 2.5f, -15 };
+		GameObject* go = new GameObject(CurrentScene(), "Tower " + to_string(y));
+		go->GetTransform()->Position.y = y * 2.5f;
 
-			bool sphere = rand() % 2 == 0;
-			if (sphere)
-			{
-				meshInfo.Mesh = Mesh::Sphere();
-				go->AddComponent<SphereCollider>();
-			}
-			else
-			{
-				meshInfo.Mesh = Mesh::Cube();
-				go->AddComponent<BoxCollider>();
-			}
-			go->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+		go->AddComponent<Rigidbody>();
+
+		bool sphere = rand() % 2 == 0;
+		if (sphere)
+		{
+			meshInfo.Mesh = Mesh::Sphere();
+			go->AddComponent<SphereCollider>();
 		}
+		else
+		{
+			meshInfo.Mesh = Mesh::Cube();
+			go->AddComponent<BoxCollider>();
+		}
+		go->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 	}
 }
 
@@ -121,20 +106,23 @@ void PhysicsDemo::OnUpdate()
 	if (Input::IsMouseDown(GLFW_MOUSE_BUTTON_2))
 	{
 		vec2 mouseDelta = Input::GetMouseDelta();
-		transform->Rotation += radians(vec3{ -mouseDelta.y, mouseDelta.x, 0 } * float(CameraRotationSpeed * Renderer::GetDeltaTime()));
+		transform->Rotation += radians(vec3{ -mouseDelta.y, mouseDelta.x, 0 } *float(CameraRotationSpeed * Renderer::GetDeltaTime()));
 	}
-
-	// Toggle global wireframe mode with `P` key
-	if (Input::IsKeyPressed(GLFW_KEY_P))
-		Renderer::SetWireframe(!Renderer::GetWireframeMode());
 
 	if (Input::IsKeyPressed(GLFW_KEY_F11))
 		ToggleFullscreen();
 
 	if (Input::IsKeyPressed(GLFW_KEY_ESCAPE))
 		Exit();
-}
 
+	if (Input::IsKeyPressed(GLFW_KEY_SPACE))
+		CurrentScene()->GetPhysics().TogglePause();
+
+	if (Input::IsKeyPressed(GLFW_KEY_J))
+	{
+		Log::Debug("OWO");
+	}
+}
 
 void PhysicsDemo::OnDraw()
 {
@@ -143,6 +131,9 @@ void PhysicsDemo::OnDraw()
 	ImGui::Text("Resolution: (%d, %d)", Renderer::GetResolution().x, Renderer::GetResolution().y);
 	ImGui::Text("VSync: %s", Renderer::GetVSync() ? "Enabled" : "Disabled");
 	ImGui::Text("Samples: %d", Renderer::GetSamples());
+
+	if (CurrentScene()->GetPhysics().GetState() == PhysicsPlayState::Paused)
+		ImGui::Text("PHYSICS PAUSED");
 }
 
 void PhysicsDemo::OnDrawGizmos()
@@ -151,7 +142,7 @@ void PhysicsDemo::OnDrawGizmos()
 
 	Ray ray;
 	ray.Origin = cameraTransform->Position;
-	ray.Direction = normalize(cameraTransform->Rotation);
+	ray.Direction = { 0, 0, -1 };
 
 	RaycastHit hit;
 	Collider* hitCollider = CurrentScene()->GetPhysics().Raycast(ray, &hit);

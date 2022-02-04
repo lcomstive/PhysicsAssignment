@@ -15,13 +15,14 @@ namespace Engine::Components
 	struct Collider : public Component
 	{
 		virtual Physics::OBB GetBounds() const = 0;
+		virtual bool LineTest(Physics::Line& line) = 0;
 		virtual bool IsPointInside(glm::vec3 point) const = 0;
 		virtual bool Raycast(Physics::Ray& ray, Physics::RaycastHit* outResult = nullptr) = 0;
 
-		virtual Physics::Collision CheckCollision(const Collider* other) const = 0;
-		virtual Physics::Collision CheckCollision(const BoxCollider* other) const = 0;
-		virtual Physics::Collision CheckCollision(const PlaneCollider* other) const = 0;
-		virtual Physics::Collision CheckCollision(const SphereCollider* other) const = 0;
+		virtual bool CheckCollision(const Collider* other) const = 0;
+		virtual bool CheckCollision(const BoxCollider* other) const = 0;
+		virtual bool CheckCollision(const PlaneCollider* other) const = 0;
+		virtual bool CheckCollision(const SphereCollider* other) const = 0;
 
 	protected:
 		virtual void Added() override;
