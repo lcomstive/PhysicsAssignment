@@ -43,7 +43,8 @@ void Application::Run()
 	OnStart();
 
 	Renderer::SetPipeline<Pipelines::ForwardRenderPipeline>();
-
+	Renderer::Resized(m_Args.Resolution);
+	
 	SetupGizmos();
 
 	// Frame counting
@@ -130,8 +131,15 @@ void Application::CreateWindow()
 	Log::Assert(glfwInit(), "Failed to initialize GLFW");
 
 	glfwWindowHint(GLFW_SAMPLES, m_Args.Samples);
+	
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+#ifndef __APPLE__
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+#else
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
+#endif
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 #ifndef NDEBUG
@@ -162,7 +170,7 @@ void Application::CreateWindow()
 
 	Input::s_MainWindow = m_Window;
 
-#ifndef NDEBUG
+#if !defined(NDEBUG) && !defined(__APPLE__)
 	// If Debug configuration, enable OpenGL debug output
 	glEnable(GL_DEBUG_OUTPUT);
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -178,7 +186,7 @@ void Application::CreateWindow()
 	ImGui_ImplOpenGL3_Init("#version 330");
 	ImGui::StyleColorsDark();
 #pragma endregion
-
+	
 	Log::Debug("Engine initialised");
 }
 

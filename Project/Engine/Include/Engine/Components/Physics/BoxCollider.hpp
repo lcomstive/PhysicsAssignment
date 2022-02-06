@@ -6,9 +6,9 @@ namespace Engine::Components
 	struct BoxCollider : public Collider
 	{
 		/// <summary>
-		/// Half collider size, relative to attached object's scale
+		/// Collider size, relative to attached object's scale
 		/// </summary>
-		glm::vec3 Extents = { 0.5f, 0.5f, 0.5f };
+		glm::vec3 Extents = { 1.0f, 1.0f, 1.0f };
 
 		/// <summary>
 		/// Position offset relative to attached object

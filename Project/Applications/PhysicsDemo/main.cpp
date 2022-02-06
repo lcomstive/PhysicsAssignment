@@ -8,7 +8,7 @@ Engine::ApplicationArgs applicationArgs =
 	1,				// Samples
 	"Physics Demo",	// Title
 	{ 1280, 720 },	// Resolution
-	50ms			// Physics Timestep
+	10ms			// Physics Timestep
 };
 
 int main()

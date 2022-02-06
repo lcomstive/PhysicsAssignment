@@ -31,7 +31,8 @@ bool Engine::Physics::TestSphereBoxCollider(Sphere a, AABB b)
 
 bool Engine::Physics::TestSphereSphereCollider(Sphere a, Sphere b)
 {
-	return distance(a.Position, b.Position) < (a.Radius + b.Radius);
+	float radius = a.Radius + b.Radius;
+	return MagnitudeSqr(b.Position - a.Position) < (radius * radius);
 }
 
 bool Engine::Physics::TestSpherePlaneCollider(Sphere a, Plane b)
@@ -104,7 +105,8 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(Sphere a, Sphere b)
 	float r = a.Radius + b.Radius;
 	vec3 distance = b.Position - a.Position;
 
-	if (!TestSphereSphereCollider(a, b))
+	float magnitude = MagnitudeSqr(distance);
+	if (magnitude - (r * r) > 0 || magnitude == 0.0f)
 		return result;
 
 	// Normalize for direction
@@ -112,7 +114,7 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(Sphere a, Sphere b)
 
 	result.IsColliding = true;
 	result.Normal = distance;
-	result.PenetrationDepth = fabsf(length(distance) - r) * 0.5f;
+	result.PenetrationDepth = fabsf(Magnitude(distance) - r) * 0.5f;
 
 	// Distance to intersection point
 	float dtp = a.Radius - result.PenetrationDepth;
@@ -126,17 +128,17 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(OBB a, Sphere b)
 {
 	CollisionManifold result = {};
 	vec3 closestPoint = a.GetClosestPoint(b.Position);
-	float distance = length(closestPoint - b.Position);
-	if (distance > b.Radius)
+	float distance = MagnitudeSqr(closestPoint - b.Position);
+	if (distance > b.Radius * b.Radius)
 		return result; // No collision occurs
 
 	vec3 normal;
-	if (fabsf(distance) < 0.0001f)
+	if (BasicallyZero(distance))
 	{
 		// Closest point is at center of sphere,
 		// try to find a new closest point
 
-		float magnitude = length(closestPoint - a.Position);
+		float magnitude = MagnitudeSqr(closestPoint - a.Position);
 		if (BasicallyZero(magnitude))
 			return result;
 
@@ -146,12 +148,12 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(OBB a, Sphere b)
 		normal = normalize(b.Position - closestPoint);
 
 	vec3 outsidePoint = b.Position - normal * b.Radius;
-	distance = length(closestPoint - outsidePoint);
+	distance = Magnitude(closestPoint - outsidePoint);
 
 	result.Normal = normal;
 	result.IsColliding = true;
 	result.PenetrationDepth = distance * 0.5f;
-	result.Contacts.emplace_back(outsidePoint + (outsidePoint - closestPoint) * 0.5f);
+	result.Contacts.emplace_back(closestPoint + (outsidePoint - closestPoint) * 0.5f);
 
 	return result;
 }
@@ -180,7 +182,7 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(OBB a, OBB b)
 	bool shouldFlip;
 	for (int i = 0; i < 15; i++)
 	{
-		if (length(faceAxis[i]) < 0.001f)
+		if (MagnitudeSqr(faceAxis[i]) < 0.001f)
 			continue;
 
 		float depth = a.PenetrationDepth(b, faceAxis[i], &shouldFlip);
@@ -248,31 +250,28 @@ const unordered_map<type_index, unordered_map<type_index, function<CollisionMani
 		typeid(SphereCollider), // A
 		unordered_map<type_index, function<CollisionManifold(Collider*, Collider*)>>
 		{
-			{ typeid(BoxCollider)    /* B */, [](void* a, void* b) { return FindCollisionFeatures(((BoxCollider*)b)->BuildOBB(), ((SphereCollider*)a)->BuildSphere()); } },
+			{ typeid(BoxCollider)    /* B */, [](void* a, void* b) { CollisionManifold manifold = FindCollisionFeatures(((BoxCollider*)b)->BuildOBB(), ((SphereCollider*)a)->BuildSphere());
+				manifold.Normal *= -1.0f; // Sphere is taken as second argument, normal is inverted
+				return manifold;
+			} },
 			{ typeid(SphereCollider) /* B */, [](void* a, void* b) { return FindCollisionFeatures(((SphereCollider*)a)->BuildSphere(), ((SphereCollider*)b)->BuildSphere()); } }
 		}
 	}
 };
 
-CollisionManifold Engine::Physics::FindCollisionFeatures(Rigidbody* a, Rigidbody* b)
+CollisionManifold Engine::Physics::FindCollisionFeatures(Collider* a, Collider* b)
 {
-	Collider* aCollider = a->GetGameObject()->GetComponent<Collider>(true);
-	Collider* bCollider = b->GetGameObject()->GetComponent<Collider>(true);
+	Log::Assert(a != nullptr && b != nullptr, "Cannot find collision features without valid colliders!");
 
-	Log::Assert(aCollider != nullptr && bCollider != nullptr, "Cannot find collision features without colliders!");
-
-	type_index aColliderType = typeid(aCollider);
-	type_index bColliderType = typeid(bCollider);
-
-	Log::Debug("A Collider: " + string(aColliderType.name()));
-	Log::Debug("B Collider: " + string(bColliderType.name()));
+	type_index aColliderType = typeid(*a);
+	type_index bColliderType = typeid(*b);
 
 	const auto& itA = CollisionTests.find(aColliderType);
 	if (itA != CollisionTests.end())
 	{
 		const auto& itB = itA->second.find(bColliderType);
 		if (itB != itA->second.end())
-			return itB->second(aCollider, bCollider);
+			return itB->second(a, b);
 	}
 
 	Log::Warning("No valid collision manifold test found for '" + string(aColliderType.name()) + "' -> '" + string(bColliderType.name()) + "'");

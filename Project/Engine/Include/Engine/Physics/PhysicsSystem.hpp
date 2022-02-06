@@ -47,13 +47,22 @@ namespace Engine::Physics
 		Components::Collider* Raycast(OctreeNode* node, Ray& ray, Engine::Components::Collider* ignoreCollider, RaycastHit* outResult);
 		Components::Collider* FindClosest(std::vector<Components::Collider*>& set, Ray& ray, RaycastHit* outResult);
 
+		struct CollisionFrame
+		{
+			Components::Collider* A;
+			Components::Rigidbody* ARigidbody;
+
+			Components::Collider* B;
+			Components::Rigidbody* BRigidbody = nullptr;
+
+			CollisionManifold Result;
+		};
+		std::vector<CollisionFrame> m_Collisions, m_PreviousCollisions;
+		
 		friend struct Engine::Components::Collider;
+				
 
 	protected:
-		std::vector<Components::Rigidbody*> m_Colliders1;
-		std::vector<Components::Rigidbody*> m_Colliders2;
-		std::vector<CollisionManifold> m_CollisionResults;
-
 		/// <summary>
 		/// How much positional correction to apply,
 		/// smaller values allow objects to penetrate more.
@@ -80,6 +89,8 @@ namespace Engine::Physics
 
 		void Start();
 		void Stop();
+		
+		void DrawGizmos();
 
 		void Resume();
 		void Pause();

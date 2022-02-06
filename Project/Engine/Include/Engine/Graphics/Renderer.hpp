@@ -31,7 +31,7 @@ namespace Engine::Graphics
 		static void Shutdown();
 		static void Resized(glm::ivec2 newResolution);
 
-		friend class Application;
+		friend class Engine::Application;
 
 	public:
 		static void Draw(bool clearQueue = true);

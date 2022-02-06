@@ -29,7 +29,8 @@ Shader* defaultShader = nullptr;
 void PhysicsDemo::OnStart()
 {
 	vec3 center = { 0, 0, 0 };
-	// CurrentScene()->GetPhysics().Accelerate(center, 1000.0f, 10);
+	CurrentScene()->GetPhysics().Accelerate(center, 1000.0f, 10);
+	CurrentScene()->GetPhysics().SetGravity({ 0, -1, 0 });
 
 	// Default Cube Mesh //
 	MeshRenderer::MeshInfo meshInfo;
@@ -38,26 +39,27 @@ void PhysicsDemo::OnStart()
 
 	// Floor
 	GameObject* floor = new GameObject(CurrentScene(), "Floor");
-	floor->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+	// floor->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 	floor->AddComponent<BoxCollider>();
+	// floor->AddComponent<SphereCollider>();
 	floor->GetTransform()->Position.y = -3.0f;
 	floor->GetTransform()->Scale = { 50, 0.5f, 50 };
 
 	// Main Camera //
 	GameObject* cameraObj = new GameObject(CurrentScene(), "Main Camera");
-	Camera* camera = cameraObj->AddComponent<Camera>();
+	cameraObj->AddComponent<Camera>();
 	cameraObj->GetTransform()->Position = { 0, 0, 20 };
 	cameraObj->GetTransform()->Rotation = { 0, radians(-90.0f), 0 }; // From euler angles
 
 	meshInfo.Material.Albedo = { 1, 0, 0, 1 };
 
-	const int TowerSize = 1;
+	const int TowerSize = 3;
 	for (int y = 0; y < TowerSize; y++)
 	{
 		GameObject* go = new GameObject(CurrentScene(), "Tower " + to_string(y));
 		go->GetTransform()->Position.y = y * 2.5f;
 
-		go->AddComponent<Rigidbody>();
+		go->AddComponent<Rigidbody>()->SetRestitution(1.0f);
 
 		bool sphere = rand() % 2 == 0;
 		if (sphere)

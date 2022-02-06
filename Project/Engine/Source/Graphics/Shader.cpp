@@ -36,7 +36,7 @@ void ProcessIncludeFiles(string& text)
 }
 
 // Create a shader from source code
-GLuint Shader::CreateShader(const string& source, const GLenum type, const string& debugName)
+GLuint Shader::CreateShader(const string& source, const GLenum type)
 {
 	if (source.empty())
 		return GL_INVALID_VALUE;
@@ -69,7 +69,7 @@ GLuint Shader::CreateShader(const string& source, const GLenum type, const strin
 		glGetShaderInfoLog(shader, maxLength, &maxLength, &infoLog[0]);
 		glDeleteShader(shader);
 
-		Log::Error("Failed to compile '" + debugName + "' - " + infoLog.data());
+		Log::Error("Failed to compile '" + source + "' - " + infoLog.data());
 		return GL_INVALID_VALUE;
 	}
 	return shader;
@@ -163,10 +163,10 @@ void Shader::CreateShaders()
 
 	vector<GLuint> shaders =
 	{
-		CreateShader(m_ShaderStages.VertexPath, GL_VERTEX_SHADER, "vertex"),
-		CreateShader(m_ShaderStages.FragmentPath, GL_FRAGMENT_SHADER, "fragment"),
-		CreateShader(m_ShaderStages.ComputePath, GL_COMPUTE_SHADER, "compute"),
-		CreateShader(m_ShaderStages.GeometryPath, GL_GEOMETRY_SHADER, "geometry")
+		CreateShader(m_ShaderStages.VertexPath, GL_VERTEX_SHADER),
+		CreateShader(m_ShaderStages.FragmentPath, GL_FRAGMENT_SHADER),
+		CreateShader(m_ShaderStages.ComputePath, GL_COMPUTE_SHADER),
+		CreateShader(m_ShaderStages.GeometryPath, GL_GEOMETRY_SHADER)
 	};
 
 	// Debug info

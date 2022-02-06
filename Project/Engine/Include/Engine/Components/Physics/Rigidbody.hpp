@@ -27,13 +27,18 @@ namespace Engine::Components
 
 		float GetFriction();
 		void  SetFriction(float value);
+		
+		bool IsStatic();
+		void SetStatic(bool isStatic);
 
 		float InverseMass();
+		float PotentialEnergy();
 
 	protected:
 		void FixedUpdate(float timestep) override;
 
 	private:
+		bool m_IsStatic = false;
 		bool m_Initialised = false;
 
 		/// <summary>
@@ -70,6 +75,7 @@ namespace Engine::Components
 
 		void ApplyWorldForces();
 		void SolveConstraints(float timestep);
+		void ApplyImpulse(Collider* other, Physics::CollisionManifold manifold, int contactIndex);
 		void ApplyImpulse(Rigidbody* other, Physics::CollisionManifold manifold, int contactIndex);
 
 		friend class Engine::Physics::PhysicsSystem;

@@ -9,9 +9,9 @@ uniform Camera camera;
 uniform float gamma = 2.2;
 
 // Low to high dynamic range
-vec3 LDRToHDR(vec3 input)
+vec3 LDRToHDR(vec3 colour)
 {
-	input = input / (input + vec3(1.0));
-	input = pow(input, vec3(1.0 / gamma));
-	return input;
+	colour = colour / (colour + vec3(1.0));
+	colour = pow(colour, vec3(1.0 / gamma));
+	return colour;
 }

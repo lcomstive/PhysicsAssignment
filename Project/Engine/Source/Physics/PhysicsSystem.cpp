@@ -2,6 +2,7 @@
 #include <functional>
 #include <condition_variable>
 #include <Engine/Application.hpp>
+#include <Engine/Graphics/Gizmos.hpp>
 #include <Engine/Physics/PhysicsSystem.hpp>
 #include <Engine/Components/Physics/Rigidbody.hpp>
 
@@ -9,6 +10,7 @@ using namespace std;
 using namespace glm;
 using namespace std::chrono;
 using namespace Engine::Physics;
+using namespace Engine::Graphics;
 using namespace Engine::Components;
 
 const vec3 InitialGravity = { 0, -9.81f, 0 };
@@ -17,17 +19,16 @@ PhysicsSystem::PhysicsSystem(Application* app, milliseconds fixedTimestep) :
 	m_App(app),
 	m_Thread(),
 	m_Octree(nullptr),
-	m_ImpulseIteration(5),
+	m_ImpulseIteration(10),
+	m_PreviousCollisions(),
 	m_Gravity(InitialGravity),
-	m_PenetrationSlack(0.01f),
+	m_PenetrationSlack(0.5f),
 	m_FixedTimestep(fixedTimestep),
 	m_LinearProjectionPercent(0.45f),
 	m_ThreadState((int)(m_PhysicsState = PhysicsPlayState::Stopped))
 {
 	// TODO: Fine tune this, or have function for variability
-	m_Colliders1.reserve(100);
-	m_Colliders2.reserve(100);
-	m_CollisionResults.reserve(100);
+	m_Collisions.reserve(100);
 }
 
 PhysicsSystem::~PhysicsSystem()
@@ -141,32 +142,54 @@ void PhysicsSystem::PhysicsLoop()
 
 		auto timeStart = high_resolution_clock::now();
 
-		m_Colliders1.clear();
-		m_Colliders2.clear();
-		m_CollisionResults.clear();
+		m_PreviousCollisions = m_Collisions;
+		m_Collisions.clear();
 
+		// Check for collisions
+		vector<pair<int, int>> collisionIndices = {};
 		for (int i = 0, size = (int)m_Colliders.size(); i < size; i++)
 		{
-			for (int j = i; j < size; j++)
+			for (int j = 0; j < size; j++)
 			{
 				if (i == j)
 					continue;
-
-				Rigidbody* aRb = m_Colliders[i]->GetRigidbody();
-				Rigidbody* bRb = m_Colliders[j]->GetRigidbody();
-				if(!aRb || !bRb)
+				
+				// Check for duplicates
+				bool duplicate = false;
+				for(pair<int, int>& index : collisionIndices)
+				{
+					if((index.first == i && index.second == j) ||
+					   (index.first == j && index.second == i))
+					{
+						duplicate = true;
+						break;
+					}
+				}
+				if(duplicate)
 					continue;
+						
+				Rigidbody* aRb = m_Colliders[i]->GetRigidbody();
+				if(!aRb)
+					continue; // Collider needs rigidbody to calculate results
 
-				CollisionManifold result = FindCollisionFeatures(m_Colliders[i]->GetRigidbody(), m_Colliders[j]->GetRigidbody());
+				CollisionManifold result = FindCollisionFeatures(m_Colliders[i], m_Colliders[j]);
 				if (!result.IsColliding)
 					continue;
 
-				m_Colliders1.emplace_back(m_Colliders[i]->GetRigidbody());
-				m_Colliders2.emplace_back(m_Colliders[j]->GetRigidbody());
-				m_CollisionResults.emplace_back(result);
+				m_Collisions.emplace_back(CollisionFrame
+				{
+					m_Colliders[i],
+					aRb,
+					m_Colliders[j],
+					m_Colliders[j]->GetRigidbody(),
+					result
+				});
+				
+				collisionIndices.emplace_back(make_pair(i, j));
 			}
 		}
 
+		// Apply additional external forces (like gravity)
 		for (Collider* collider : m_Colliders)
 		{
 			Rigidbody* rb = collider->GetRigidbody();
@@ -174,32 +197,44 @@ void PhysicsSystem::PhysicsLoop()
 				rb->ApplyWorldForces();
 		}
 
+		// Apply linear impulse resolution
 		for (int k = 0; k < m_ImpulseIteration; k++)
 		{
-			for(int i = 0; i < (int)m_CollisionResults.size(); i++)
+			for(CollisionFrame collision : m_Collisions)
 			{
-				int jSize = (int)m_CollisionResults[i].Contacts.size();
+				int jSize = (int)collision.Result.Contacts.size();
 				for (int j = 0; j < jSize; j++)
-					m_Colliders1[i]->ApplyImpulse(m_Colliders2[i], m_CollisionResults[i], j);
+				{
+					if(collision.BRigidbody && !collision.BRigidbody->IsStatic())
+						collision.ARigidbody->ApplyImpulse(collision.BRigidbody, collision.Result, j);
+					else // RB -> Static Collider
+						collision.ARigidbody->ApplyImpulse(collision.B, collision.Result, j);
+				}
 			}
 		}
 
 		m_App->FixedStep(m_FixedTimestep.count() / 1000.0f); // milliseconds -> seconds
 
-		for (int i = 0; i < (int)m_CollisionResults.size(); i++)
+		// Positional correction
+		for(CollisionFrame collision : m_Collisions)
 		{
-			float totalMass = m_Colliders1[i]->GetMass() + m_Colliders2[i]->GetMass();
-			if (totalMass == 0.0f)
+			if(collision.ARigidbody->IsStatic() || !collision.BRigidbody || collision.BRigidbody->IsStatic())
 				continue;
-
-			float depth = fmaxf(m_CollisionResults[i].PenetrationDepth - m_PenetrationSlack, 0.0f);
-			float scalar = depth / totalMass;
-			vec3 correction = m_CollisionResults[i].Normal * scalar * m_LinearProjectionPercent;
-
-			m_Colliders1[i]->GetTransform()->Position -= correction * m_Colliders1[i]->InverseMass();
-			m_Colliders2[i]->GetTransform()->Position += correction * m_Colliders2[i]->InverseMass();
+			
+			float totalMass = collision.ARigidbody->InverseMass() + collision.BRigidbody->InverseMass();
+			if(totalMass == 0.0f)
+				continue;
+			
+			float depth = fmaxf(collision.Result.PenetrationDepth - m_PenetrationSlack, 0.0f);
+			float scalar = (totalMass == 0.0f) ? 0.0f : depth / totalMass;
+			vec3 correction = collision.Result.Normal * scalar * m_LinearProjectionPercent;
+			
+			collision.A->GetTransform()->Position -= correction * collision.ARigidbody->InverseMass();
+			
+			collision.B->GetTransform()->Position += correction * collision.BRigidbody->InverseMass();
 		}
 
+		// Solve constraints
 		for (Collider* collider : m_Colliders)
 		{
 			Rigidbody* rb = collider->GetRigidbody();
@@ -421,4 +456,20 @@ bool PhysicsSystem::LineTest(Line line, Engine::Components::Collider* ignoreColl
 	}
 
 	return closest;
+}
+
+void PhysicsSystem::DrawGizmos()
+{
+	for(CollisionFrame collision : m_PreviousCollisions)
+	{
+		// Draw collision normal
+		Gizmos::Colour = { 1, 0, 1, 1 };
+		vec3 position = collision.A->GetTransform()->Position;
+		Gizmos::DrawCube(position, vec3 { 0.01f, 0.01f, 0.01f } + collision.Result.Normal);
+		
+		// Draw contact points
+		Gizmos::Colour = { 0, 1, 1, 1 };
+		for(vec3 contactPoint : collision.Result.Contacts)
+			Gizmos::DrawSphere(contactPoint, 0.05f);
+	}
 }

@@ -18,6 +18,7 @@ Rigidbody::Rigidbody() :
 	IsTrigger(false),
 	UseGravity(true),
 	m_Friction(0.6f),
+	m_IsStatic(false),
 	m_PreviousPosition(),
 	m_Initialised(false)
 { }
@@ -29,11 +30,11 @@ float Rigidbody::GetRestitution() { return m_CoR; }
 void  Rigidbody::SetRestitution(float value) { m_CoR = value; }
 float Rigidbody::GetFriction() { return m_Friction; }
 void  Rigidbody::SetFriction(float value) { m_Friction = value; }
+bool Rigidbody::IsStatic() { return m_IsStatic; }
+void Rigidbody::SetStatic(bool isStatic) { m_IsStatic = isStatic; }
 
-float Rigidbody::InverseMass()
-{
-	return m_Mass <= 0.0f ? 0.0f : (1.0f / m_Mass);
-}
+float Rigidbody::InverseMass() { return m_Mass <= 0.0f ? 0.0f : (1.0f / m_Mass); }
+float Rigidbody::PotentialEnergy() { return m_Mass * dot(GetSystem().GetGravity(), GetTransform()->Position); }
 
 void Rigidbody::ApplyForce(glm::vec3 force, ForceMode mode)
 {
@@ -56,6 +57,9 @@ void Rigidbody::ApplyWorldForces()
 
 void Rigidbody::FixedUpdate(float timestep)
 {
+	if(m_IsStatic)
+		return;
+	
 	Transform* transform = GetTransform();
 
 	if (!m_Initialised)
@@ -86,7 +90,7 @@ void Rigidbody::FixedUpdate(float timestep)
 	transform->Position += m_Velocity * timestep;
 }
 
-// Linear impulse
+// Linear impulse, assumes neither object is static
 void Rigidbody::ApplyImpulse(Rigidbody* other, CollisionManifold manifold, int contactIndex)
 {
 	float invMass1 = InverseMass();
@@ -102,7 +106,8 @@ void Rigidbody::ApplyImpulse(Rigidbody* other, CollisionManifold manifold, int c
 		return; // Moving away from each other? Ignore
 
 	float e = fminf(m_CoR, other->m_CoR);
-	float numerator = (-(1.0f + e) * dot(relativeVel, relativeNorm));
+
+	float numerator = -(1.0f + e) * dot(relativeVel, relativeNorm);
 	float j = numerator / invMassSum; // Magnitude of impulse to apply
 	if (!manifold.Contacts.empty() && j != 0.0f)
 		j /= (float)manifold.Contacts.size();
@@ -127,41 +132,17 @@ void Rigidbody::ApplyImpulse(Rigidbody* other, CollisionManifold manifold, int c
 
 	float friction = sqrtf(m_Friction * other->m_Friction);
 	jt = std::clamp(jt, -j * friction, j * friction);  // Coulumb's Law
-
+	
 	vec3 tangentImpulse = t * jt;
 	m_Velocity		  -= tangentImpulse * invMass1;
 	other->m_Velocity += tangentImpulse * invMass2;
 }
 
-void Rigidbody::SolveConstraints(float timestep)
+void Rigidbody::ApplyImpulse(Collider* other, CollisionManifold manifold, int contactIndex)
 {
-	Transform* transform = GetTransform();
-	Collider* rbCollider = GetGameObject()->GetComponent<Collider>(true);
-	PhysicsSystem& system = GetSystem();
-
-	Line line = { m_PreviousPosition, transform->Position };
-	if (!system.LineTest(line, rbCollider))
-		return; // No collisions will occur
-
-	vec3 velocity = transform->Position - m_PreviousPosition;
-	vec3 direction = normalize(velocity);
-
-	Ray ray;
-	ray.Origin = m_PreviousPosition;
-	ray.Direction = direction;
-
-	RaycastHit hit;
-	Collider* hitCollider = system.Raycast(ray, rbCollider, &hit);
-	if(hitCollider)
-	{
-		transform->Position = hit.Point + hit.Normal * 0.003f;
-
-		vec3 vn = hit.Normal * dot(hit.Normal, velocity);
-		vec3 vt = velocity - vn;
-
-		// Record current position to avoid tunnelling
-		m_PreviousPosition = transform->Position - (vt - vn * m_CoR);
-
-		Log::Debug("Hit '" + hitCollider->GetGameObject()->GetName() + "'");
-	}
+	// `other` does not have a rigidbody, or the rigidbody is static
+		
+	m_Velocity -= manifold.Normal * manifold.PenetrationDepth * m_Mass * 2.0f;
 }
+
+void Rigidbody::SolveConstraints(float timestep) { }

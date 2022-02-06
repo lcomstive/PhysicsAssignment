@@ -167,6 +167,7 @@ bool AABB::LineTest(Line& line)
 bool OBB::IsPointInside(vec3& point)
 {
 	vec3 dir = point - Position;
+	vec3 extents = Extents;
 
 	// Iterate & test over each axis
 	for (int i = 0; i < 3; i++)
@@ -174,9 +175,9 @@ bool OBB::IsPointInside(vec3& point)
 		vec3 axis = Orientation[i];
 		float distance = dot(dir, axis);
 
-		if (distance > Extents[i])
+		if (distance > extents[i])
 			return false;
-		if (distance < -Extents[i])
+		if (distance < -extents[i])
 			return false;
 	}
 
@@ -187,16 +188,13 @@ vec3 OBB::GetClosestPoint(vec3& point)
 {
 	vec3 result = Position;
 	vec3 dir = point - Position;
+	vec3 extents = Extents;
 
 	// Iterate & test over each axis
 	for (int i = 0; i < 3; i++)
 	{
 		vec3 axis = Orientation[i];
-		float distance = dot(dir, axis) / 2.0f;
-		if (distance > Extents[i])
-			distance = Extents[i];
-		if (distance < -Extents[i])
-			distance = -Extents[i];
+		float distance = std::clamp(dot(dir, axis) / 2.0f, -extents[i], extents[i]);
 
 		result += axis * distance * 2.0f;
 	}
@@ -206,28 +204,12 @@ vec3 OBB::GetClosestPoint(vec3& point)
 
 Interval OBB::GetInterval(const vec3& axis)
 {
-	vec3 vertices[8];
-	vec3 axes[] =
-	{
-		Orientation[0],
-		Orientation[1],
-		Orientation[2]
-	};
-
-	// Thanks to the Game Physics Cookbook (page 187)
-	vertices[0] = Position + axes[0] * Extents[0] + axes[1] * Extents[1] + axes[2] * Extents[2];
-	vertices[1] = Position - axes[0] * Extents[0] + axes[1] * Extents[1] + axes[2] * Extents[2];
-	vertices[2] = Position + axes[0] * Extents[0] - axes[1] * Extents[1] + axes[2] * Extents[2];
-	vertices[3] = Position + axes[0] * Extents[0] + axes[1] * Extents[1] - axes[2] * Extents[2];
-	vertices[4] = Position - axes[0] * Extents[0] - axes[1] * Extents[1] - axes[2] * Extents[2];
-	vertices[5] = Position + axes[0] * Extents[0] - axes[1] * Extents[1] - axes[2] * Extents[2];
-	vertices[6] = Position - axes[0] * Extents[0] + axes[1] * Extents[1] - axes[2] * Extents[2];
-	vertices[7] = Position - axes[0] * Extents[0] - axes[1] * Extents[1] + axes[2] * Extents[2];
+	vector<vec3> vertices = GetVertices();
 
 	Interval result;
 	result.Min = result.Max = dot(axis, vertices[0]);
 
-	for (int i = 0; i < 8; i++)
+	for (int i = 1; i < 8; i++)
 	{
 		float projection = dot(axis, vertices[i]);
 		result.Min = std::min(projection, result.Min);
@@ -269,7 +251,7 @@ bool OBB::Raycast(Ray& ray, RaycastHit* outResult)
 
 	// Compare f against ray and store min,max results in t
 	float t[6] = { 0, 0, 0, 0, 0, 0 };
-	vec3 size = Extents * 2.0f;
+	vec3 size = Extents;
 	for (int i = 0; i < 3; i++)
 	{
 		if (BasicallyZero(f[i]))
@@ -344,7 +326,7 @@ vector<Line> OBB::GetEdges()
 	int indices[][2] =
 	{
 		{ 6, 1 }, { 6, 3 }, { 6, 4 }, { 2, 7 }, { 2, 5 }, { 2, 0 },
-		{ 0, 1 }, { 0, 3 }, { 7, 1 }, { 7, 4 }, { 4, 5 }, { 5, 3 }
+		{ 0, 1 }, { 0, 3 }, { 7, 1 }, { 7, 4 }, { 4, 5 }, { 5, 3 },
 	};
 	for (int j = 0; j < 12; j++)
 		lines.emplace_back(Line
@@ -372,12 +354,12 @@ vector<Plane> OBB::GetPlanes()
 	vector<Plane> result;
 	result.resize(6);
 
-	result[0] = Plane(a[0]        ,  dot(a[0], (c + a[0] * e.x)));
-	result[1] = Plane(a[0] * -1.0f, -dot(a[0], (c - a[0] * e.x)));
-	result[2] = Plane(a[1]        ,  dot(a[1], (c + a[0] * e.y)));
-	result[3] = Plane(a[1] * -1.0f, -dot(a[1], (c - a[0] * e.y)));
-	result[4] = Plane(a[2]        ,  dot(a[2], (c + a[0] * e.z)));
-	result[5] = Plane(a[2] * -1.0f, -dot(a[2], (c - a[0] * e.z)));
+	result[0] = Plane( a[0],  dot(a[0], (c + a[0] * e.x)));
+	result[1] = Plane(-a[0], -dot(a[0], (c - a[0] * e.x)));
+	result[2] = Plane( a[1],  dot(a[1], (c + a[1] * e.y)));
+	result[3] = Plane(-a[1], -dot(a[1], (c - a[1] * e.y)));
+	result[4] = Plane( a[2],  dot(a[2], (c + a[2] * e.z)));
+	result[5] = Plane(-a[2], -dot(a[2], (c - a[2] * e.z)));
 
 	return result;
 }
@@ -421,9 +403,9 @@ vector<vec3> OBB::ClipEdges(vector<Line> edges)
 	{
 		for (uint32_t j = 0; j < (uint32_t)edges.size(); j++)
 		{
-			if (ClipToPlane(planes[i], edges[j], &intersection) &&
-				IsPointInside(intersection))
-				results.emplace_back(intersection);
+			if (ClipToPlane(planes[i], edges[j], &intersection))
+				if(IsPointInside(intersection))
+					results.emplace_back(intersection);
 		}
 	}
 
@@ -472,7 +454,7 @@ float OBB::PenetrationDepth(OBB& other, vec3& axis, bool* outShouldFlip)
 #pragma endregion
 
 #pragma region Sphere
-bool Sphere::IsPointInside(vec3& point) { return length(point - Position) < Radius; }
+bool Sphere::IsPointInside(vec3& point) { return MagnitudeSqr(point - Position) < (Radius * Radius); }
 
 glm::vec3 Sphere::GetClosestPoint(glm::vec3& point)
 {
@@ -526,7 +508,7 @@ vec3 Line::GetClosestPoint(vec3& point)
 {
 	vec3 line = End - Start;
 	float t = dot(point - Start, line) / dot(line, line);
-	t = clamp(t, 0.0f, 1.0f);
+	t = std::clamp(t, 0.0f, 1.0f);
 	return Start + line * t;
 }
 #pragma endregion

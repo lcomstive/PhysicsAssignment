@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <Engine/Physics/Shapes.hpp>
 
-namespace Engine::Components { struct Rigidbody; }
+namespace Engine::Components { struct Collider; }
 
 namespace Engine::Physics
 {
@@ -32,6 +32,6 @@ namespace Engine::Physics
 	CollisionManifold FindCollisionFeatures(OBB a, OBB b);
 	CollisionManifold FindCollisionFeatures(OBB a, Sphere b);
 	CollisionManifold FindCollisionFeatures(Sphere a, Sphere b);
-	CollisionManifold FindCollisionFeatures(Engine::Components::Rigidbody* a, Engine::Components::Rigidbody* b);
+	CollisionManifold FindCollisionFeatures(Engine::Components::Collider* a, Engine::Components::Collider* b);
 #pragma endregion
 }

@@ -19,7 +19,7 @@ void BoxCollider::DrawGizmos()
 	Gizmos::Colour = { 0, 1, 0, 1 };
 	Gizmos::DrawWireCube(
 		transform->Position + Offset,
-		transform->Scale * Extents * 2.0f,
+		transform->Scale * Extents,
 		transform->Rotation);
 #endif
 }
