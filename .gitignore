@@ -37,3 +37,6 @@ x64/
 Debug/
 Release/
 [Bb]uild/
+
+# Mac OS
+.DS_Store
