@@ -12,6 +12,7 @@ namespace Engine::Components
 
 		void DrawGizmos() override;
 
+		glm::mat4 InverseTensor() override;
 		Physics::OBB GetBounds() const override;
 		bool LineTest(Physics::Line& line) override;
 		bool IsPointInside(glm::vec3 point) const override;

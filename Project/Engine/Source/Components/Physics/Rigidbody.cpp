@@ -15,12 +15,13 @@ Rigidbody::Rigidbody() :
 	m_CoR(0.5f),
 	m_Mass(1.0f),
 	m_Velocity(),
+	m_Torque(0.0f),
 	IsTrigger(false),
 	UseGravity(true),
 	m_Friction(0.6f),
+	m_Sleeping(false),
 	m_IsStatic(false),
-	m_PreviousPosition(),
-	m_Initialised(false)
+	m_AngularVelocity()
 { }
 
 PhysicsSystem& Rigidbody::GetSystem() { return GetGameObject()->GetScene()->GetPhysics(); }
@@ -36,6 +37,15 @@ void Rigidbody::SetStatic(bool isStatic) { m_IsStatic = isStatic; }
 float Rigidbody::InverseMass() { return m_Mass <= 0.0f ? 0.0f : (1.0f / m_Mass); }
 float Rigidbody::PotentialEnergy() { return m_Mass * dot(GetSystem().GetGravity(), GetTransform()->Position); }
 
+void Rigidbody::Added() { GetGameObject()->GetScene()->GetPhysics().AddRigidbody(this); }
+void Rigidbody::Removed() { GetGameObject()->GetScene()->GetPhysics().RemoveRigidbody(this); }
+
+mat4 Rigidbody::InverseTensor()
+{
+	Collider* collider = GetGameObject()->GetComponent<Collider>(true);
+	return collider ? collider->InverseTensor() : inverse(mat4(0.0f));
+}
+
 void Rigidbody::ApplyForce(glm::vec3 force, ForceMode mode)
 {
 	switch (mode)
@@ -50,44 +60,44 @@ void Rigidbody::ApplyForce(glm::vec3 force, ForceMode mode)
 	}
 }
 
+void Rigidbody::AddRotationalImpulse(vec3 point, vec3 impulse)
+{
+	vec3 CoM = GetTransform()->Position; // Center of Mass
+	vec3 torque = cross(point - CoM, impulse);
+	m_AngularVelocity += vec3(InverseTensor() * vec4(torque, 1.0f));
+}
+
 void Rigidbody::ApplyWorldForces()
 {
 	ApplyForce(GetSystem().GetGravity() * m_Mass);
 }
 
-void Rigidbody::FixedUpdate(float timestep)
+void Rigidbody::PreFixedUpdate(float timestep)
 {
 	if(m_IsStatic)
 		return;
 	
+	const float damping = 0.98f;
 	Transform* transform = GetTransform();
 
-	if (!m_Initialised)
-	{
-		m_PreviousPosition = transform->Position;
-		m_Initialised = true;
-	}
-
-	/*
-	vec3 velocity = transform->Position - m_PreviousPosition;
-	m_PreviousPosition = transform->Position;
-	float deltaSquare = timestep * timestep;
-
-	// Apply gravity
-	m_Force += m_Mass * GetSystem().GetGravity();
-
-	transform->Position += velocity + m_Force * deltaSquare;
-
-	SolveConstraints(timestep);
-
-	m_Force = { 0, 0, 0 }; // Reset applied force
-	*/
-
-	const float damping = 0.98f;
+	// Linear motion
 	vec3 acceleration = m_Force * InverseMass();
 	m_Velocity += (acceleration * timestep) * damping;
 
+	// Angular motion
+	vec3 angAccel = vec3(InverseTensor() * vec4(m_Torque, 1.0f));
+	m_AngularVelocity += (angAccel * timestep) * damping;
+
+	// Apply motion
+	m_Sleeping = MagnitudeSqr(m_Velocity) < InverseMass() &&
+					MagnitudeSqr(m_AngularVelocity) < 0.005f;
+
+	m_Force = vec3(0.0f);
+	if (m_Sleeping && CanSleep)
+		return;
+
 	transform->Position += m_Velocity * timestep;
+	transform->Rotation += m_AngularVelocity * timestep;
 }
 
 // Linear impulse, assumes neither object is static
@@ -99,22 +109,36 @@ void Rigidbody::ApplyImpulse(Rigidbody* other, CollisionManifold manifold, int c
 	if (BasicallyZero(invMassSum))
 		return;
 
-	vec3 relativeVel = other->m_Velocity - m_Velocity;
+	// Contact points relative to center of mass
+	vec3 r1 = manifold.Contacts[contactIndex] - GetTransform()->Position;
+	vec3 r2 = manifold.Contacts[contactIndex] - other->GetTransform()->Position;
+
+	// Store inverse tensors
+	mat4 i1 = InverseTensor();
+	mat4 i2 = other->InverseTensor();
+
+	vec3 relativeVel = (other->m_Velocity + cross(other->m_AngularVelocity, r2)) -
+						(m_Velocity + cross(m_AngularVelocity, r1));
 	vec3 relativeNorm = normalize(manifold.Normal);
 
 	if (dot(relativeVel, relativeNorm) > 0)
 		return; // Moving away from each other? Ignore
 
 	float e = fminf(m_CoR, other->m_CoR);
-
 	float numerator = -(1.0f + e) * dot(relativeVel, relativeNorm);
-	float j = numerator / invMassSum; // Magnitude of impulse to apply
+	float d1 = invMassSum;
+	vec3 d2 = cross(vec3(i1 * vec4(cross(r1, relativeNorm), 1.0f)), r1);
+	vec3 d3 = cross(vec3(i2 * vec4(cross(r2, relativeNorm), 1.0f)), r2);
+	float denominator = d1 + dot(relativeNorm, d2 + d3);
+	float j = (denominator == 0.0f) ? 0.0f : numerator / denominator; // Magnitude of impulse to apply
 	if (!manifold.Contacts.empty() && j != 0.0f)
 		j /= (float)manifold.Contacts.size();
 
 	vec3 impulse = relativeNorm * j;
 	m_Velocity		  -= impulse * invMass1;
 	other->m_Velocity += impulse * invMass2;
+	m_AngularVelocity		 -= vec3(i1 * vec4(cross(r1, impulse), 1.0f));
+	other->m_AngularVelocity += vec3(i2 * vec4(cross(r2, impulse), 1.0f));
 
 	// Tangent to normal, used to apply friction
 	vec3 t = relativeVel - (relativeNorm * dot(relativeVel, relativeNorm));
@@ -124,7 +148,14 @@ void Rigidbody::ApplyImpulse(Rigidbody* other, CollisionManifold manifold, int c
 
 	// Get magnitude of friction to apply
 	numerator = -dot(relativeVel, t);
-	float jt = numerator / invMassSum;
+	d1 = invMassSum;
+	d2 = cross(vec3(i1 * vec4(cross(r1, t), 1.0f)), r1);
+	d3 = cross(vec3(i2 * vec4(cross(r2, t), 1.0f)), r2);
+	denominator = d1 + dot(t, d2 + d3);
+	if (denominator == 0.0f)
+		return;
+
+	float jt = numerator / denominator;
 	if (!manifold.Contacts.empty() && jt != 0.0f)
 		jt /= (float)manifold.Contacts.size();
 	if (BasicallyZero(jt))
@@ -136,13 +167,74 @@ void Rigidbody::ApplyImpulse(Rigidbody* other, CollisionManifold manifold, int c
 	vec3 tangentImpulse = t * jt;
 	m_Velocity		  -= tangentImpulse * invMass1;
 	other->m_Velocity += tangentImpulse * invMass2;
+	m_AngularVelocity		 -= vec3(i1 * vec4(cross(r1, tangentImpulse), 1.0f));
+	other->m_AngularVelocity += vec3(i2 * vec4(cross(r2, tangentImpulse), 1.0f));
 }
 
 void Rigidbody::ApplyImpulse(Collider* other, CollisionManifold manifold, int contactIndex)
 {
 	// `other` does not have a rigidbody, or the rigidbody is static
 		
-	m_Velocity -= manifold.Normal * manifold.PenetrationDepth * m_Mass * 2.0f;
+	float invMass1 = InverseMass();
+	if (BasicallyZero(invMass1))
+		return;
+
+	// Contact points relative to center of mass
+	vec3 r1 = manifold.Contacts[contactIndex] - GetTransform()->Position;
+	vec3 r2 = manifold.Contacts[contactIndex] - other->GetTransform()->Position;
+
+	// Store inverse tensors
+	mat4 i1 = InverseTensor();
+	mat4 i2 = other->InverseTensor();
+
+	vec3 relativeVel = -(m_Velocity + cross(m_AngularVelocity, r1));
+	vec3 relativeNorm = normalize(manifold.Normal);
+
+	if (dot(relativeVel, relativeNorm) > 0)
+		return; // Moving away from each other? Ignore
+
+	float e = m_CoR;
+
+	float numerator = -(1.0f + e) * dot(relativeVel, relativeNorm);
+	float d1 = invMass1;
+	vec3 d2 = cross(vec3(i1 * vec4(cross(r1, relativeNorm), 1.0f)), r1);
+	vec3 d3 = cross(vec3(i2 * vec4(cross(r2, relativeNorm), 1.0f)), r2);
+	float denominator = d1 + dot(relativeNorm, d2 + d3);
+	float j = (denominator == 0.0f) ? 0.0f : numerator / denominator; // Magnitude of impulse to apply
+	if (!manifold.Contacts.empty() && j != 0.0f)
+		j /= (float)manifold.Contacts.size();
+
+	vec3 impulse = relativeNorm * j;
+	m_Velocity -= impulse * invMass1;
+	m_AngularVelocity -= vec3(i1 * vec4(cross(r1, impulse), 1.0f));
+
+	// Tangent to normal, used to apply friction
+	vec3 t = relativeVel - (relativeNorm * dot(relativeVel, relativeNorm));
+	if (BasicallyZero(MagnitudeSqr(t)))
+		return;
+	t = normalize(t);
+
+	// Get magnitude of friction to apply
+	numerator = -dot(relativeVel, t);
+	d1 = invMass1;
+	d2 = cross(vec3(i1 * vec4(cross(r1, t), 1.0f)), r1);
+	d3 = cross(vec3(i2 * vec4(cross(r2, t), 1.0f)), r2);
+	denominator = d1 + dot(t, d2 + d3);
+	if (denominator == 0.0f)
+		return;
+
+	float jt = numerator / denominator;
+	if (!manifold.Contacts.empty() && jt != 0.0f)
+		jt /= (float)manifold.Contacts.size();
+	if (BasicallyZero(jt))
+		return;
+
+	float friction = sqrtf(m_Friction);
+	jt = std::clamp(jt, -j * friction, j * friction);  // Coulumb's Law
+
+	vec3 tangentImpulse = t * jt;
+	m_Velocity -= tangentImpulse * invMass1;
+	m_AngularVelocity -= vec3(i1 * vec4(cross(r1, tangentImpulse), 1.0f));
 }
 
 void Rigidbody::SolveConstraints(float timestep) { }

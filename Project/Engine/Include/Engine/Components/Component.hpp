@@ -28,7 +28,7 @@ namespace Engine
 
 			virtual void Draw() { }
 			virtual void DrawGizmos() { }
-			virtual void Update() { }
+			virtual void Update(float deltaTime) { }
 			virtual void FixedUpdate(float timestep) { }
 
 		public:

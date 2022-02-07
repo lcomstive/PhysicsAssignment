@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <Engine/Utilities.hpp>
 #include <Engine/Physics/Shapes.hpp>
 
@@ -196,7 +197,7 @@ vec3 OBB::GetClosestPoint(vec3& point)
 		vec3 axis = Orientation[i];
 		float distance = std::clamp(dot(dir, axis) / 2.0f, -extents[i], extents[i]);
 
-		result += axis * distance * 2.0f;
+		result += axis * distance;
 	}
 
 	return result;

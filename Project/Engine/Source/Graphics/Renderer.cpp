@@ -74,6 +74,19 @@ void Renderer::ClearDrawQueue()
 	s_DrawQueue.clear();
 }
 
+void Renderer::Submit(Mesh* mesh, Material& material, vec3 position, vec3 scale, vec3 rotation)
+{
+	Submit(DrawCall
+		{
+			mesh,
+			material,
+			position,
+			scale,
+			rotation
+		});
+}
+
+
 void Renderer::Submit(Mesh* mesh, Material& material, Components::Transform* transform)
 {
 	Submit(DrawCall

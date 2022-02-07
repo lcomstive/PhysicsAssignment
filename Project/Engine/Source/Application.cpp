@@ -57,7 +57,7 @@ void Application::Run()
 	m_Scene.GetPhysics().Start();
 	while (!glfwWindowShouldClose(m_Window))
 	{
-		m_Scene.Update();
+		m_Scene.Update((float)Renderer::s_DeltaTime);
 		OnUpdate();
 		Input::Update();
 
@@ -190,10 +190,7 @@ void Application::CreateWindow()
 	Log::Debug("Engine initialised");
 }
 
-void Application::FixedStep(float timestep)
-{
-	m_Scene.FixedUpdate(timestep);
-}
+void Application::FixedStep(float timestep) { m_Scene.FixedUpdate(timestep); }
 
 Scene* Application::CurrentScene() { return &m_Scene; }
 void Application::SetTitle(std::string title) { glfwSetWindowTitle(m_Window, (m_Args.Title = title).c_str()); }
@@ -306,7 +303,7 @@ void Application::GLFW_DebugOutput(
 	GLsizei length,
 	const char* msg,
 	const void* userParam)
-{
+ {
 	switch (type)
 	{
 	case GL_DEBUG_TYPE_ERROR:

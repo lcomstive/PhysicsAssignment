@@ -23,6 +23,7 @@ namespace Engine::Components
 		bool LineTest(Physics::Line& line) override;
 		bool IsPointInside(glm::vec3 point) const override;
 		bool Raycast(Physics::Ray& ray, Physics::RaycastHit* outResult) override;
+		glm::mat4 InverseTensor() override;
 
 		bool CheckCollision(const Collider* other) const override;
 		bool CheckCollision(const BoxCollider* other) const override;

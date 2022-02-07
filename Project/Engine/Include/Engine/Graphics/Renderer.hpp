@@ -39,6 +39,7 @@ namespace Engine::Graphics
 		static void ClearDrawQueue();
 		static void Submit(DrawCall drawCall);
 		static void Submit(Mesh* mesh, Material& material, Components::Transform* transform);
+		static void Submit(Mesh* mesh, Material& material, glm::vec3 position, glm::vec3 scale, glm::vec3 rotation);
 
 #pragma region Setters
 		static void SetVSync(bool vsync = true);

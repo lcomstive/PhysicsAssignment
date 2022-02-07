@@ -24,6 +24,8 @@ namespace Engine::Components
 		virtual bool CheckCollision(const PlaneCollider* other) const = 0;
 		virtual bool CheckCollision(const SphereCollider* other) const = 0;
 
+		virtual glm::mat4 InverseTensor() { return inverse(glm::mat4(0.0f)); }
+
 	protected:
 		virtual void Added() override;
 		virtual void Removed() override;

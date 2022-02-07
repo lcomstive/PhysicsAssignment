@@ -30,20 +30,14 @@ void PhysicsDemo::OnStart()
 {
 	vec3 center = { 0, 0, 0 };
 	CurrentScene()->GetPhysics().Accelerate(center, 1000.0f, 10);
-	CurrentScene()->GetPhysics().SetGravity({ 0, -1, 0 });
+	CurrentScene()->GetPhysics().SetGravity({ 0, -10, 0 });
 
 	// Default Cube Mesh //
 	MeshRenderer::MeshInfo meshInfo;
 	meshInfo.Mesh = Mesh::Cube();
 	meshInfo.Material = {};
 
-	// Floor
-	GameObject* floor = new GameObject(CurrentScene(), "Floor");
-	// floor->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
-	floor->AddComponent<BoxCollider>();
-	// floor->AddComponent<SphereCollider>();
-	floor->GetTransform()->Position.y = -3.0f;
-	floor->GetTransform()->Scale = { 50, 0.5f, 50 };
+	CreateWalls();
 
 	// Main Camera //
 	GameObject* cameraObj = new GameObject(CurrentScene(), "Main Camera");
@@ -53,26 +47,37 @@ void PhysicsDemo::OnStart()
 
 	meshInfo.Material.Albedo = { 1, 0, 0, 1 };
 
-	const int TowerSize = 3;
-	for (int y = 0; y < TowerSize; y++)
+	const int TowerSize = 5;
+	for (int x = 0; x < TowerSize; x++)
 	{
-		GameObject* go = new GameObject(CurrentScene(), "Tower " + to_string(y));
-		go->GetTransform()->Position.y = y * 2.5f;
-
-		go->AddComponent<Rigidbody>()->SetRestitution(1.0f);
-
-		bool sphere = rand() % 2 == 0;
-		if (sphere)
+		for (int y = 0; y < TowerSize; y++)
 		{
-			meshInfo.Mesh = Mesh::Sphere();
-			go->AddComponent<SphereCollider>();
+			for (int z = 0; z < TowerSize; z++)
+			{
+				GameObject* go = new GameObject(CurrentScene(), "Tower " + to_string(y));
+				go->GetTransform()->Position.x = x * 5;
+				go->GetTransform()->Position.y = y * 5;
+				go->GetTransform()->Position.z = z * 5;
+				go->GetTransform()->Rotation = { Random(-90, 90), Random(-90, 90), Random(-90, 90) };
+
+				Rigidbody* rb = go->AddComponent<Rigidbody>();
+				// rb->CanSleep = false;
+				rb->SetRestitution(0.5f);
+
+				bool sphere = false; // rand() % 2 == 0;
+				if (sphere)
+				{
+					meshInfo.Mesh = Mesh::Sphere();
+					go->AddComponent<SphereCollider>();
+				}
+				else
+				{
+					meshInfo.Mesh = Mesh::Cube();
+					go->AddComponent<BoxCollider>();
+				}
+				go->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+			}
 		}
-		else
-		{
-			meshInfo.Mesh = Mesh::Cube();
-			go->AddComponent<BoxCollider>();
-		}
-		go->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 	}
 }
 
@@ -84,6 +89,7 @@ void PhysicsDemo::OnShutdown()
 	delete defaultShader;
 }
 
+RaycastHit Hit = {};
 const float CameraSpeed = 5.0f;
 const float CameraRotationSpeed = 5.0f;
 void PhysicsDemo::OnUpdate()
@@ -120,9 +126,18 @@ void PhysicsDemo::OnUpdate()
 	if (Input::IsKeyPressed(GLFW_KEY_SPACE))
 		CurrentScene()->GetPhysics().TogglePause();
 
-	if (Input::IsKeyPressed(GLFW_KEY_J))
+
+	Ray ray;
+	ray.Origin = Camera::GetMainCamera()->GetTransform()->Position;
+	ray.Direction = { 0, 0, -1 };
+
+	Collider* hitCollider = CurrentScene()->GetPhysics().Raycast(ray, &Hit);
+
+	if (hitCollider && Input::IsKeyPressed(GLFW_KEY_F))
 	{
-		Log::Debug("OWO");
+		Rigidbody* rb = hitCollider->GetRigidbody();
+		if (rb)
+			rb->ApplyForce(-Hit.Normal * 10.0f, ForceMode::Impulse);
 	}
 }
 
@@ -140,17 +155,33 @@ void PhysicsDemo::OnDraw()
 
 void PhysicsDemo::OnDrawGizmos()
 {
-	Transform* cameraTransform = Camera::GetMainCamera()->GetTransform();
-
-	Ray ray;
-	ray.Origin = cameraTransform->Position;
-	ray.Direction = { 0, 0, -1 };
-
-	RaycastHit hit;
-	Collider* hitCollider = CurrentScene()->GetPhysics().Raycast(ray, &hit);
-	if (hitCollider)
+	if (Hit.Distance > 0)
 	{
 		Gizmos::Colour = { 0, 1, 1, 1 };
-		Gizmos::DrawCube(hit.Point, { 0.1f, 0.1f, 0.1f });
+		Gizmos::DrawCube(Hit.Point, { 0.1f, 0.1f, 0.1f });
 	}
+}
+
+const float WallDistance = 100.0f, WallThickness = 25;
+const vec3 WallOffset = { 0, WallDistance - WallThickness - 5.0f, 0 };
+void PhysicsDemo::CreateWall(vec3 axis)
+{
+	GameObject* wall = new GameObject(CurrentScene(), "Wall");
+	// wall->AddComponent<MeshRenderer>()->Meshes = { MeshRenderer::MeshInfo { Mesh::Cube(), Material {}}};
+	wall->AddComponent<BoxCollider>();
+
+	Transform* transform = wall->GetTransform();
+	transform->Scale = vec3(WallDistance) - abs(axis) * vec3(WallDistance - WallThickness);
+	transform->Rotation = axis * radians(90.0f); // Rotate 90 degrees on axis
+	transform->Position = -axis * WallDistance + WallOffset;
+}
+
+void PhysicsDemo::CreateWalls()
+{
+	CreateWall(vec3 {  0,  1,  0 });
+	CreateWall(vec3 {  0, -1,  0 });
+	CreateWall(vec3 {  1,  0,  0 });
+	CreateWall(vec3 { -1,  0,  0 });
+	CreateWall(vec3 {  0,  0,  1 });
+	CreateWall(vec3 {  0,  0, -1 });
 }

@@ -18,13 +18,12 @@ const vec3 InitialGravity = { 0, -9.81f, 0 };
 PhysicsSystem::PhysicsSystem(Application* app, milliseconds fixedTimestep) :
 	m_App(app),
 	m_Thread(),
+	m_Solver(nullptr),
 	m_Octree(nullptr),
 	m_ImpulseIteration(10),
 	m_PreviousCollisions(),
 	m_Gravity(InitialGravity),
-	m_PenetrationSlack(0.5f),
 	m_FixedTimestep(fixedTimestep),
-	m_LinearProjectionPercent(0.45f),
 	m_ThreadState((int)(m_PhysicsState = PhysicsPlayState::Stopped))
 {
 	// TODO: Fine tune this, or have function for variability
@@ -54,6 +53,9 @@ glm::vec3 PhysicsSystem::GetGravity() { return m_Gravity; }
 
 void PhysicsSystem::Start()
 {
+	if (!m_Solver)
+		SetSolver<LinearProjectionSolver>();
+
 	m_ThreadState.store((int)(m_PhysicsState = PhysicsPlayState::Playing));
 	m_Thread = thread(&PhysicsSystem::PhysicsLoop, this);
 }
@@ -95,8 +97,8 @@ bool PhysicsSystem::Accelerate(vec3& position, float size, int maxRecursions)
 	if (m_Octree)
 		return false;
 
-	vec3 min = position - vec3 { size, size, size };
-	vec3 max = position + vec3 { size, size, size };
+	vec3 min = position - vec3{ size, size, size };
+	vec3 max = position + vec3{ size, size, size };
 
 	m_Octree = new OctreeNode();
 	m_Octree->Bounds = AABB::FromMinMax(min, max);
@@ -111,7 +113,7 @@ void PhysicsSystem::AddCollider(Collider* collider)
 {
 	lock_guard guard(m_CollidersMutex);
 	m_Colliders.emplace_back(collider);
-	
+
 	if (m_Octree)
 		Insert(m_Octree, collider);
 }
@@ -129,6 +131,22 @@ void PhysicsSystem::RemoveCollider(Collider* collider)
 		Remove(m_Octree, collider);
 }
 
+void PhysicsSystem::AddRigidbody(Rigidbody* rb)
+{
+	lock_guard guard(m_CollidersMutex);
+	m_Rigidbodies.emplace_back(rb);
+}
+
+void PhysicsSystem::RemoveRigidbody(Rigidbody* rb)
+{
+	const auto& it = find(m_Rigidbodies.begin(), m_Rigidbodies.end(), rb);
+	if (it != m_Rigidbodies.end())
+	{
+		lock_guard guard(m_CollidersMutex);
+		m_Rigidbodies.erase(it);
+	}
+}
+
 void PhysicsSystem::PhysicsLoop()
 {
 	PhysicsPlayState currentState;
@@ -142,70 +160,31 @@ void PhysicsSystem::PhysicsLoop()
 
 		auto timeStart = high_resolution_clock::now();
 
+		m_CollidersMutex.lock();
 		m_PreviousCollisions = m_Collisions;
 		m_Collisions.clear();
+		m_CollidersMutex.unlock();
 
 		// Check for collisions
-		vector<pair<int, int>> collisionIndices = {};
-		for (int i = 0, size = (int)m_Colliders.size(); i < size; i++)
-		{
-			for (int j = 0; j < size; j++)
-			{
-				if (i == j)
-					continue;
-				
-				// Check for duplicates
-				bool duplicate = false;
-				for(pair<int, int>& index : collisionIndices)
-				{
-					if((index.first == i && index.second == j) ||
-					   (index.first == j && index.second == i))
-					{
-						duplicate = true;
-						break;
-					}
-				}
-				if(duplicate)
-					continue;
-						
-				Rigidbody* aRb = m_Colliders[i]->GetRigidbody();
-				if(!aRb)
-					continue; // Collider needs rigidbody to calculate results
-
-				CollisionManifold result = FindCollisionFeatures(m_Colliders[i], m_Colliders[j]);
-				if (!result.IsColliding)
-					continue;
-
-				m_Collisions.emplace_back(CollisionFrame
-				{
-					m_Colliders[i],
-					aRb,
-					m_Colliders[j],
-					m_Colliders[j]->GetRigidbody(),
-					result
-				});
-				
-				collisionIndices.emplace_back(make_pair(i, j));
-			}
-		}
+		FindCollisions();
 
 		// Apply additional external forces (like gravity)
 		for (Collider* collider : m_Colliders)
 		{
 			Rigidbody* rb = collider->GetRigidbody();
-			if(rb)
+			if (rb)
 				rb->ApplyWorldForces();
 		}
 
 		// Apply linear impulse resolution
 		for (int k = 0; k < m_ImpulseIteration; k++)
 		{
-			for(CollisionFrame collision : m_Collisions)
+			for (CollisionFrame collision : m_Collisions)
 			{
 				int jSize = (int)collision.Result.Contacts.size();
 				for (int j = 0; j < jSize; j++)
 				{
-					if(collision.BRigidbody && !collision.BRigidbody->IsStatic())
+					if (collision.BRigidbody && !collision.BRigidbody->IsStatic())
 						collision.ARigidbody->ApplyImpulse(collision.BRigidbody, collision.Result, j);
 					else // RB -> Static Collider
 						collision.ARigidbody->ApplyImpulse(collision.B, collision.Result, j);
@@ -213,33 +192,19 @@ void PhysicsSystem::PhysicsLoop()
 			}
 		}
 
-		m_App->FixedStep(m_FixedTimestep.count() / 1000.0f); // milliseconds -> seconds
+		float fixedTimestep = m_FixedTimestep.count() / 1000.0f;
+		for(Rigidbody* rb : m_Rigidbodies)
+			rb->PreFixedUpdate(fixedTimestep);
+		m_App->FixedStep(fixedTimestep); // milliseconds -> seconds
 
-		// Positional correction
-		for(CollisionFrame collision : m_Collisions)
-		{
-			if(collision.ARigidbody->IsStatic() || !collision.BRigidbody || collision.BRigidbody->IsStatic())
-				continue;
-			
-			float totalMass = collision.ARigidbody->InverseMass() + collision.BRigidbody->InverseMass();
-			if(totalMass == 0.0f)
-				continue;
-			
-			float depth = fmaxf(collision.Result.PenetrationDepth - m_PenetrationSlack, 0.0f);
-			float scalar = (totalMass == 0.0f) ? 0.0f : depth / totalMass;
-			vec3 correction = collision.Result.Normal * scalar * m_LinearProjectionPercent;
-			
-			collision.A->GetTransform()->Position -= correction * collision.ARigidbody->InverseMass();
-			
-			collision.B->GetTransform()->Position += correction * collision.BRigidbody->InverseMass();
-		}
+		RunSolver();
 
 		// Solve constraints
 		for (Collider* collider : m_Colliders)
 		{
 			Rigidbody* rb = collider->GetRigidbody();
 			if (rb)
-				rb->SolveConstraints(m_FixedTimestep.count() / 1000.0f);
+				rb->SolveConstraints(fixedTimestep);
 		}
 
 		milliseconds remainingTime = duration_cast<milliseconds>(m_FixedTimestep - (high_resolution_clock::now() - timeStart));
@@ -248,8 +213,65 @@ void PhysicsSystem::PhysicsLoop()
 	}
 }
 
-Collider* PhysicsSystem::Raycast(Ray& ray, RaycastHit* outResult) { return Raycast(ray, nullptr, outResult); }
-Collider* PhysicsSystem::Raycast(Ray& ray, Collider* ignoreCollider, RaycastHit* outResult)
+void PhysicsSystem::RunSolver()
+{
+	if (!m_Solver)
+		return;
+
+	m_Solver->SetCollisions(m_Collisions);
+
+	m_Solver->PreSolve();
+	m_Solver->Solve(m_FixedTimestep.count() / 1000.0f);
+}
+
+void PhysicsSystem::FindCollisions()
+{
+	vector<pair<int, int>> collisionIndices = {};
+	for (int i = 0, size = (int)m_Colliders.size(); i < size; i++)
+	{
+		for (int j = 0; j < size; j++)
+		{
+			if (i == j)
+				continue;
+
+			// Check for duplicates
+			bool duplicate = false;
+			for (pair<int, int>& index : collisionIndices)
+			{
+				if ((index.first == i && index.second == j) ||
+					(index.first == j && index.second == i))
+				{
+					duplicate = true;
+					break;
+				}
+			}
+			if (duplicate)
+				continue;
+
+			Rigidbody* aRb = m_Colliders[i]->GetRigidbody();
+			if (!aRb)
+				continue; // Collider needs rigidbody to calculate results
+
+			CollisionManifold result = FindCollisionFeatures(m_Colliders[i], m_Colliders[j]);
+			if (!result.IsColliding)
+				continue;
+
+			m_Collisions.emplace_back(CollisionFrame
+				{
+					m_Colliders[i],
+					aRb,
+					m_Colliders[j],
+					m_Colliders[j]->GetRigidbody(),
+					result
+				});
+
+			collisionIndices.emplace_back(make_pair(i, j));
+		}
+	}
+}
+
+Collider* PhysicsSystem::Raycast(Ray ray, RaycastHit* outResult) { return Raycast(ray, nullptr, outResult); }
+Collider* PhysicsSystem::Raycast(Ray ray, Collider* ignoreCollider, RaycastHit* outResult)
 {
 	if (m_Octree)
 		return Raycast(m_Octree, ray, ignoreCollider, outResult);
@@ -460,16 +482,21 @@ bool PhysicsSystem::LineTest(Line line, Engine::Components::Collider* ignoreColl
 
 void PhysicsSystem::DrawGizmos()
 {
-	for(CollisionFrame collision : m_PreviousCollisions)
+	// Make copy of collisions, using mutexes for thread safety
+	m_CollidersMutex.lock();
+	auto collisions = m_PreviousCollisions;
+	m_CollidersMutex.unlock();
+
+	for (CollisionFrame collision : collisions)
 	{
 		// Draw collision normal
 		Gizmos::Colour = { 1, 0, 1, 1 };
 		vec3 position = collision.A->GetTransform()->Position;
-		Gizmos::DrawCube(position, vec3 { 0.01f, 0.01f, 0.01f } + collision.Result.Normal);
-		
+		Gizmos::DrawCube(position, vec3{ 0.01f, 0.01f, 0.01f } + collision.Result.Normal);
+
 		// Draw contact points
 		Gizmos::Colour = { 0, 1, 1, 1 };
-		for(vec3 contactPoint : collision.Result.Contacts)
+		for (vec3 contactPoint : collision.Result.Contacts)
 			Gizmos::DrawSphere(contactPoint, 0.05f);
 	}
 }

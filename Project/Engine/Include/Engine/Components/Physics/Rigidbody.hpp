@@ -10,6 +10,7 @@ namespace Engine::Components
 
 	struct Rigidbody : public Component
 	{
+		bool CanSleep = true;
 		bool UseGravity = true;
 		bool IsTrigger = false;
 
@@ -18,6 +19,7 @@ namespace Engine::Components
 		Physics::PhysicsSystem& GetSystem();
 
 		void ApplyForce(glm::vec3 force, ForceMode mode = ForceMode::Acceleration);
+		void AddRotationalImpulse(glm::vec3 point, glm::vec3 impulse);
 
 		float GetMass();
 		void  SetMass(float value);
@@ -34,17 +36,18 @@ namespace Engine::Components
 		float InverseMass();
 		float PotentialEnergy();
 
-	protected:
-		void FixedUpdate(float timestep) override;
-
 	private:
 		bool m_IsStatic = false;
-		bool m_Initialised = false;
 
 		/// <summary>
 		/// Sum of all acting forces this physics step
 		/// </summary>
 		glm::vec3 m_Force;
+
+		/// <summary>
+		/// Sum of all torque acting this physics step
+		/// </summary>
+		glm::vec3 m_Torque;
 		
 		/// <summary>
 		/// Current motion of object
@@ -52,10 +55,9 @@ namespace Engine::Components
 		glm::vec3 m_Velocity;
 
 		/// <summary>
-		/// Position of object in previous physics step,
-		/// useful to prevent tunnelling (going through objects when in motion)
+		/// Current angular motion of object
 		/// </summary>
-		glm::vec3 m_PreviousPosition;
+		glm::vec3 m_AngularVelocity;
 
 		/// <summary>
 		/// Mass of object
@@ -73,7 +75,18 @@ namespace Engine::Components
 		/// </summary>
 		float m_Friction;
 
+		/// <summary>
+		/// When sleeping, no impulse resolution is applied until an external force is applied
+		/// </summary>
+		bool m_Sleeping = false;
+
+		void Added() override;
+		void Removed() override;
+
+		glm::mat4 InverseTensor();
+
 		void ApplyWorldForces();
+		void PreFixedUpdate(float timestep);
 		void SolveConstraints(float timestep);
 		void ApplyImpulse(Collider* other, Physics::CollisionManifold manifold, int contactIndex);
 		void ApplyImpulse(Rigidbody* other, Physics::CollisionManifold manifold, int contactIndex);

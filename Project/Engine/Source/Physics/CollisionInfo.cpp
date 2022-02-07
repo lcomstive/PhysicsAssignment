@@ -41,7 +41,7 @@ bool Engine::Physics::TestSpherePlaneCollider(Sphere a, Plane b)
 	return distance(closestPoint, a.Position) < a.Radius;
 }
 
-bool Engine::Physics::TestBoxBoxCollider(AABB a, OBB b) { return TestBoxBoxCollider(OBB { a.Position, a.Extents, mat4(1.0f) }, b); }
+bool Engine::Physics::TestBoxBoxCollider(AABB a, OBB b) { return TestBoxBoxCollider(OBB{ a.Position, a.Extents, mat4(1.0f) }, b); }
 bool Engine::Physics::TestBoxBoxCollider(AABB a, AABB b)
 {
 	vec3 aMin = a.Min(), aMax = a.Max();
@@ -83,8 +83,8 @@ bool Engine::Physics::TestBoxPlaneCollider(OBB a, Plane b)
 {
 	vec3 rot[] = { a.Orientation[0], a.Orientation[1], a.Orientation[2] };
 	float planeLength = a.Extents.x * fabsf(dot(b.Normal, rot[0])) +
-						a.Extents.y * fabsf(dot(b.Normal, rot[1])) +
-						a.Extents.z * fabsf(dot(b.Normal, rot[2]));
+		a.Extents.y * fabsf(dot(b.Normal, rot[1])) +
+		a.Extents.z * fabsf(dot(b.Normal, rot[2]));
 	float collisionDot = dot(b.Normal, a.Position);
 	float t = fabsf(collisionDot - b.Distance) - planeLength;
 
@@ -129,7 +129,7 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(OBB a, Sphere b)
 	CollisionManifold result = {};
 	vec3 closestPoint = a.GetClosestPoint(b.Position);
 	float distance = MagnitudeSqr(closestPoint - b.Position);
-	if (distance > b.Radius * b.Radius)
+	if (distance > (b.Radius * b.Radius))
 		return result; // No collision occurs
 
 	vec3 normal;
@@ -192,7 +192,7 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(OBB a, OBB b)
 		if (depth < result.PenetrationDepth)
 		{
 			if (shouldFlip)
-				faceAxis[i] = -faceAxis[i];
+				faceAxis[i] = faceAxis[i] * -1.0f;
 			result.PenetrationDepth = depth;
 			hitNormal = &faceAxis[i];
 		}
@@ -250,10 +250,14 @@ const unordered_map<type_index, unordered_map<type_index, function<CollisionMani
 		typeid(SphereCollider), // A
 		unordered_map<type_index, function<CollisionManifold(Collider*, Collider*)>>
 		{
-			{ typeid(BoxCollider)    /* B */, [](void* a, void* b) { CollisionManifold manifold = FindCollisionFeatures(((BoxCollider*)b)->BuildOBB(), ((SphereCollider*)a)->BuildSphere());
-				manifold.Normal *= -1.0f; // Sphere is taken as second argument, normal is inverted
-				return manifold;
-			} },
+			{ typeid(BoxCollider)    /* B */,
+				[](void* a, void* b)
+				{
+					CollisionManifold manifold = FindCollisionFeatures(((BoxCollider*)b)->BuildOBB(), ((SphereCollider*)a)->BuildSphere());
+					manifold.Normal *= -1.0f; // Sphere is taken as second argument, normal is inverted
+					return manifold;
+				}
+			},
 			{ typeid(SphereCollider) /* B */, [](void* a, void* b) { return FindCollisionFeatures(((SphereCollider*)a)->BuildSphere(), ((SphereCollider*)b)->BuildSphere()); } }
 		}
 	}
@@ -275,6 +279,6 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(Collider* a, Collider* 
 	}
 
 	Log::Warning("No valid collision manifold test found for '" + string(aColliderType.name()) + "' -> '" + string(bColliderType.name()) + "'");
-	return CollisionManifold {};
+	return CollisionManifold{};
 }
 #pragma endregion

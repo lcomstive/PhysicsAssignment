@@ -31,7 +31,7 @@ OBB BoxCollider::BuildOBB() const
 	{
 		transform->Position + Offset,
 		Extents * transform->Scale,
-		orientate3(transform->Rotation)
+		eulerAngleXYZ(transform->Rotation.x, transform->Rotation.y, transform->Rotation.z)
 	};
 }
 
@@ -40,6 +40,28 @@ bool BoxCollider::Raycast(Ray& ray, RaycastHit* outResult) { return BuildOBB().R
 
 OBB BoxCollider::GetBounds() const { return BuildOBB(); }
 bool BoxCollider::IsPointInside(glm::vec3 point) const { return BuildOBB().IsPointInside(point); }
+
+mat4 BoxCollider::InverseTensor()
+{
+	Rigidbody* rb = GetRigidbody();
+	float mass = 0.0f;
+	if (!rb || (mass = rb->GetMass()) == 0.0f)
+		return mat4(0.0f);
+
+	vec3 size = Extents * 2.0f;
+	float fraction = (1.0f / 12.0f);
+
+	float x2 = size.x * size.x;
+	float y2 = size.y * size.y;
+	float z2 = size.z * size.z;
+
+	return inverse(mat4(
+		(y2 + z2) * mass * fraction, 0, 0, 0,
+		0, (x2 + z2) * mass * fraction, 0, 0,
+		0, 0, (x2 + y2) * mass * fraction, 0,
+		0, 0, 0, 1.0f
+	));
+}
 
 bool BoxCollider::CheckCollision(const Collider* other) const { return other->CheckCollision(this); }
 

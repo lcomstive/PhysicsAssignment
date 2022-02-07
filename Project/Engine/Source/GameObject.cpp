@@ -54,13 +54,13 @@ void GameObject::DrawGizmos()
 		child->GetGameObject()->DrawGizmos();
 }
 
-void GameObject::Update()
+void GameObject::Update(float deltaTime)
 {
 	for (auto& pair : m_Components)
-		pair.second->Update();
+		pair.second->Update(deltaTime);
 
 	for (Transform* child : m_Transform->GetChildren())
-		child->GetGameObject()->Update();
+		child->GetGameObject()->Update(deltaTime);
 }
 
 void GameObject::FixedUpdate(float timestep)
