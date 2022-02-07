@@ -42,7 +42,7 @@ bool PlaneCollider::CheckCollision(const Collider* other) const { return other->
 bool PlaneCollider::CheckCollision(const BoxCollider* other) const
 {
 	return TestBoxPlaneCollider(
-		other->BuildOBB(),
+		other->GetOBB(),
 		BuildPlane()
 	);
 }

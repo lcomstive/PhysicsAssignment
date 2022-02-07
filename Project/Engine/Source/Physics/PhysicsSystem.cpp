@@ -20,6 +20,7 @@ PhysicsSystem::PhysicsSystem(Application* app, milliseconds fixedTimestep) :
 	m_Thread(),
 	m_Solver(nullptr),
 	m_Octree(nullptr),
+	m_LastTimeStep(-1ms),
 	m_ImpulseIteration(10),
 	m_PreviousCollisions(),
 	m_Gravity(InitialGravity),
@@ -48,8 +49,9 @@ void PhysicsSystem::SetGravity(vec3 gravity)
 	m_Gravity = gravity;
 }
 
-milliseconds  PhysicsSystem::Timestep() { return m_FixedTimestep; }
 glm::vec3 PhysicsSystem::GetGravity() { return m_Gravity; }
+std::chrono::milliseconds PhysicsSystem::LastTimeStep() { return m_LastTimeStep; }
+milliseconds PhysicsSystem::Timestep() { return m_FixedTimestep; }
 
 void PhysicsSystem::Start()
 {
@@ -158,7 +160,7 @@ void PhysicsSystem::PhysicsLoop()
 			pauseConditional.wait(lock, [&] { return m_PhysicsState != PhysicsPlayState::Paused; });
 		}
 
-		auto timeStart = high_resolution_clock::now();
+		time_point timeStart = high_resolution_clock::now();
 
 		m_CollidersMutex.lock();
 		m_PreviousCollisions = m_Collisions;
@@ -207,7 +209,9 @@ void PhysicsSystem::PhysicsLoop()
 				rb->SolveConstraints(fixedTimestep);
 		}
 
-		milliseconds remainingTime = duration_cast<milliseconds>(m_FixedTimestep - (high_resolution_clock::now() - timeStart));
+		m_LastTimeStep = duration_cast<milliseconds>(high_resolution_clock::now() - timeStart);
+		milliseconds remainingTime = m_FixedTimestep - m_LastTimeStep;
+		Log::Debug("Remaining Time: " + to_string(remainingTime.count()));
 		if (remainingTime.count() > 0)
 			this_thread::sleep_for(remainingTime);
 	}

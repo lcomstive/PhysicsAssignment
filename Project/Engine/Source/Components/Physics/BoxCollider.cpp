@@ -24,10 +24,12 @@ void BoxCollider::DrawGizmos()
 #endif
 }
 
-OBB BoxCollider::BuildOBB() const
+OBB BoxCollider::GetOBB() const { return m_Bounds; }
+
+void BoxCollider::FixedUpdate(float timestep)
 {
 	Transform* transform = GetTransform();
-	return OBB
+	m_Bounds =
 	{
 		transform->Position + Offset,
 		Extents * transform->Scale,
@@ -35,11 +37,11 @@ OBB BoxCollider::BuildOBB() const
 	};
 }
 
-bool BoxCollider::LineTest(Physics::Line& line) { return BuildOBB().LineTest(line); }
-bool BoxCollider::Raycast(Ray& ray, RaycastHit* outResult) { return BuildOBB().Raycast(ray, outResult); }
+bool BoxCollider::LineTest(Physics::Line& line) { return GetOBB().LineTest(line); }
+bool BoxCollider::Raycast(Ray& ray, RaycastHit* outResult) { return GetOBB().Raycast(ray, outResult); }
 
-OBB BoxCollider::GetBounds() const { return BuildOBB(); }
-bool BoxCollider::IsPointInside(glm::vec3 point) const { return BuildOBB().IsPointInside(point); }
+OBB BoxCollider::GetBounds() const { return GetOBB(); }
+bool BoxCollider::IsPointInside(glm::vec3 point) const { return GetOBB().IsPointInside(point); }
 
 mat4 BoxCollider::InverseTensor()
 {
@@ -68,8 +70,8 @@ bool BoxCollider::CheckCollision(const Collider* other) const { return other->Ch
 bool BoxCollider::CheckCollision(const BoxCollider* other) const
 {
 	return TestBoxBoxCollider(
-		BuildOBB(),
-		other->BuildOBB()
+		GetOBB(),
+		other->GetOBB()
 	);
 }
 
@@ -77,14 +79,14 @@ bool BoxCollider::CheckCollision(const SphereCollider* other) const
 {
 	return TestSphereBoxCollider(
 		other->BuildSphere(),
-		BuildOBB()
+		GetOBB()
 	);
 }
 
 bool BoxCollider::CheckCollision(const PlaneCollider* other) const
 {
 	return TestBoxPlaneCollider(
-		BuildOBB(),
+		GetOBB(),
 		other->BuildPlane()
 	);
 }

@@ -69,7 +69,7 @@ bool SphereCollider::CheckCollision(const BoxCollider* other) const
 {
 	return TestSphereBoxCollider(
 		BuildSphere(),
-		other->BuildOBB()
+		other->GetOBB()
 	);
 }
 

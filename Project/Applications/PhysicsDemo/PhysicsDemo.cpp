@@ -144,7 +144,8 @@ void PhysicsDemo::OnUpdate()
 void PhysicsDemo::OnDraw()
 {
 	ImGui::Text("FPS: %f\n", Renderer::GetFPS());
-	ImGui::Text("Frame Time: %f", Renderer::GetDeltaTime());
+	ImGui::Text("Render  Frame Time: %fms", Renderer::GetDeltaTime() * 1000.0f);
+	ImGui::Text("Physics Frame Time: %fms", (CurrentScene()->GetPhysics().LastTimeStep().count()) * 1.0f);
 	ImGui::Text("Resolution: (%d, %d)", Renderer::GetResolution().x, Renderer::GetResolution().y);
 	ImGui::Text("VSync: %s", Renderer::GetVSync() ? "Enabled" : "Disabled");
 	ImGui::Text("Samples: %d", Renderer::GetSamples());

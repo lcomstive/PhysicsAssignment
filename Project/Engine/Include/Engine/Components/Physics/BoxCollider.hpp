@@ -15,7 +15,7 @@ namespace Engine::Components
 		/// </summary>
 		glm::vec3 Offset = { 0, 0, 0 };
 
-		Physics::OBB BuildOBB() const;
+		Physics::OBB GetOBB() const;
 
 		void DrawGizmos() override;
 
@@ -29,5 +29,10 @@ namespace Engine::Components
 		bool CheckCollision(const BoxCollider* other) const override;
 		bool CheckCollision(const PlaneCollider* other) const override;
 		bool CheckCollision(const SphereCollider* other) const override;
+
+	private:
+		Physics::OBB m_Bounds;
+
+		void FixedUpdate(float timestep) override;
 	};
 }

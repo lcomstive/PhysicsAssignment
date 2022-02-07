@@ -44,6 +44,7 @@ namespace Engine::Physics
 		OctreeNode* m_Octree;
 		PhysicsPlayState m_PhysicsState;
 		glm::vec3 m_Gravity = { 0, -9.81f, 0 };
+		std::chrono::milliseconds m_LastTimeStep;
 		std::chrono::milliseconds m_FixedTimestep;
 		std::vector<Components::Collider*> m_Colliders;
 		std::vector<Components::Rigidbody*> m_Rigidbodies;
@@ -105,6 +106,7 @@ namespace Engine::Physics
 		/// <returns>Acceleration success</returns>
 		bool Accelerate(glm::vec3& position, float size, int maxRecursions = 5);
 
+		std::chrono::milliseconds LastTimeStep();
 		std::chrono::milliseconds Timestep();
 		void SetTimestep(std::chrono::milliseconds timestep);
 

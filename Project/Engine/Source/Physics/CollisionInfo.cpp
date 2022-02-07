@@ -242,8 +242,8 @@ const unordered_map<type_index, unordered_map<type_index, function<CollisionMani
 		typeid(BoxCollider), // A
 		unordered_map<type_index, function<CollisionManifold(Collider*, Collider*)>>
 		{
-			{ typeid(BoxCollider)	 /* B */, [](void* a, void* b) { return FindCollisionFeatures(((BoxCollider*)a)->BuildOBB(), ((BoxCollider*)b)->BuildOBB()); } },
-			{ typeid(SphereCollider) /* B */, [](void* a, void* b) { return FindCollisionFeatures(((BoxCollider*)a)->BuildOBB(), ((SphereCollider*)b)->BuildSphere()); }}
+			{ typeid(BoxCollider)	 /* B */, [](void* a, void* b) { return FindCollisionFeatures(((BoxCollider*)a)->GetOBB(), ((BoxCollider*)b)->GetOBB()); } },
+			{ typeid(SphereCollider) /* B */, [](void* a, void* b) { return FindCollisionFeatures(((BoxCollider*)a)->GetOBB(), ((SphereCollider*)b)->BuildSphere()); }}
 		}
 	},
 	{
@@ -253,7 +253,7 @@ const unordered_map<type_index, unordered_map<type_index, function<CollisionMani
 			{ typeid(BoxCollider)    /* B */,
 				[](void* a, void* b)
 				{
-					CollisionManifold manifold = FindCollisionFeatures(((BoxCollider*)b)->BuildOBB(), ((SphereCollider*)a)->BuildSphere());
+					CollisionManifold manifold = FindCollisionFeatures(((BoxCollider*)b)->GetOBB(), ((SphereCollider*)a)->BuildSphere());
 					manifold.Normal *= -1.0f; // Sphere is taken as second argument, normal is inverted
 					return manifold;
 				}
