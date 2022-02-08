@@ -28,6 +28,8 @@ Shader* defaultShader = nullptr;
 
 void PhysicsDemo::OnStart()
 {
+	// CurrentScene()->GetPhysics().SetBroadphase<BroadphaseOctree>(3 /* depth */, 100.0f /* size */);
+
 	// Default Cube Mesh //
 	MeshRenderer::MeshInfo meshInfo;
 	meshInfo.Mesh = Mesh::Cube();
@@ -43,7 +45,7 @@ void PhysicsDemo::OnStart()
 
 	meshInfo.Material.Albedo = { 1, 0, 0, 1 };
 
-	const int TowerSize = 2;
+	const int TowerSize = 3;
 	for (int x = 0; x < TowerSize; x++)
 	{
 		for (int y = 0; y < TowerSize; y++)
@@ -56,13 +58,11 @@ void PhysicsDemo::OnStart()
 				go->GetTransform()->Position.z = (z - TowerSize / 2.0f) * 5;
 				go->GetTransform()->Rotation = radians(vec3{ Random(-180, 180), Random(-180, 180), Random(-180, 180) });
 
-				Log::Debug("Created @ {" + to_string((x - TowerSize / 2.0f) * 5) + ", " + to_string(y * 5) + ", " + to_string((z - TowerSize / 2.0f) * 5) + "}");
-
 				Rigidbody* rb = go->AddComponent<Rigidbody>();
 				// rb->CanSleep = false;
 				rb->SetRestitution(0.5f);
 
-				bool sphere = false; // rand() % 2 == 0;
+				bool sphere = rand() % 2 == 0;
 				if (sphere)
 				{
 					meshInfo.Mesh = Mesh::Sphere();
@@ -177,9 +177,11 @@ void PhysicsDemo::CreateWall(vec3 axis)
 void PhysicsDemo::CreateWalls()
 {
 	CreateWall(vec3 {  0,  1,  0 });
+	/*
 	CreateWall(vec3 {  0, -1,  0 });
 	CreateWall(vec3 {  1,  0,  0 });
 	CreateWall(vec3 { -1,  0,  0 });
 	CreateWall(vec3 {  0,  0,  1 });
 	CreateWall(vec3 {  0,  0, -1 });
+	*/
 }

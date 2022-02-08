@@ -7,7 +7,6 @@
 #include <unordered_map>
 #include <Engine/Log.hpp>
 #include <Engine/Physics/Octree.hpp>
-#include <Engine/Physics/Solver.hpp>
 #include <Engine/Components/Physics/Collider.hpp>
 #include <Engine/Physics/Broadphase/Broadphase.hpp>
 
@@ -30,7 +29,6 @@ namespace Engine::Physics
 		std::atomic_int m_ThreadState; // Corresponds to ThreadState
 		std::condition_variable pauseConditional; // Notifies thread when to unpause
 
-		Solver* m_Solver;
 		Broadphase* m_Broadphase;
 		PhysicsPlayState m_PhysicsState;
 		glm::vec3 m_Gravity = { 0, -9.81f, 0 };
@@ -38,6 +36,20 @@ namespace Engine::Physics
 		std::chrono::milliseconds m_FixedTimestep;
 		std::vector<Components::Collider*> m_Colliders;
 		std::vector<Components::Rigidbody*> m_Rigidbodies;
+
+		/// <summary>
+		/// How much positional correction to apply,
+		/// smaller values allow objects to penetrate more.
+		/// Typically 0.2-0.8
+		/// </summary>
+		float m_LinearProjectionPercent = 0.5f;
+
+		/// <summary>
+		/// How much to allow objects to penetrate.
+		/// The larger the number, the less jitter in the system.
+		/// Range 0.01-0.1.
+		/// </summary>
+		float m_PenetrationSlack = 0.05f;
 
 		Engine::Application* m_App;
 
@@ -48,17 +60,10 @@ namespace Engine::Physics
 
 		void AddRigidbody(Components::Rigidbody* collider);
 		void RemoveRigidbody(Components::Rigidbody* collider);
-		
-		std::vector<Components::Collider*> Query(OctreeNode* node, AABB& bounds);
-		std::vector<Components::Collider*> Query(OctreeNode* node, Sphere& bounds);
-		Components::Collider* Raycast(OctreeNode* node, Ray& ray, RaycastHit* outResult);
-		bool LineTest(OctreeNode* node, Line& line, Components::Collider* ignoreCollider);
-		Components::Collider* Raycast(OctreeNode* node, Ray& ray, Engine::Components::Collider* ignoreCollider, RaycastHit* outResult);
-		Components::Collider* FindClosest(std::vector<Components::Collider*>& set, Ray& ray, RaycastHit* outResult);
 
-		void RunSolver(std::vector<CollisionFrame>& collisions);
+		void PositionalCorrect(std::vector<CollisionFrame>& collisions);
 		void NarrowPhase(std::vector<CollisionFrame>& potentialCollisions);
-		
+
 		friend struct Components::Collider;
 		friend struct Components::Rigidbody;
 
@@ -86,7 +91,7 @@ namespace Engine::Physics
 
 		void Start();
 		void Stop();
-		
+
 		void DrawGizmos();
 
 		void Resume();
@@ -101,18 +106,6 @@ namespace Engine::Physics
 		glm::vec3 GetGravity();
 
 		PhysicsPlayState GetState();
-
-		template<typename T, class... Args>
-		T* SetSolver(Args... args)
-		{
-			Log::Assert(std::is_base_of<Solver, T>(), "Solver needs to have base class Engine::Physics::Solver");
-
-			if (m_Solver)
-				delete m_Solver;
-
-			m_Solver = new T(args...);
-			return (T*)m_Solver;
-		}
 
 		template<typename T, class... Args>
 		T* SetBroadphase(Args... args)

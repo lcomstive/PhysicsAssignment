@@ -237,7 +237,6 @@
     <ClCompile Include="Source\Physics\Shapes.cpp" />
     <ClCompile Include="Source\Physics\CollisionInfo.cpp" />
     <ClCompile Include="Source\Physics\PhysicsSystem.cpp" />
-    <ClCompile Include="Source\Physics\Solver.cpp" />
     <ClCompile Include="Source\Scene.cpp" />
     <ClCompile Include="Source\Timer.cpp" />
     <ClCompile Include="Source\Utilities.cpp" />
@@ -279,7 +278,6 @@
     <ClInclude Include="Include\Engine\Physics\Shapes.hpp" />
     <ClInclude Include="Include\Engine\Physics\CollisionInfo.hpp" />
     <ClInclude Include="Include\Engine\Physics\PhysicsSystem.hpp" />
-    <ClInclude Include="Include\Engine\Physics\Solver.hpp" />
     <ClInclude Include="Include\Engine\Scene.hpp" />
     <ClInclude Include="Include\Engine\Timer.hpp" />
     <ClInclude Include="Include\Engine\Utilities.hpp" />

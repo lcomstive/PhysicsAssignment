@@ -168,9 +168,6 @@
     <ClCompile Include="Source\Components\Physics\Particle.cpp">
       <Filter>Source Files\Components\Physics</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Physics\Solver.cpp">
-      <Filter>Source Files\Physics</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Physics\Broadphase\Broadphase.cpp">
       <Filter>Source Files\Physics\Broadphase</Filter>
     </ClCompile>
@@ -288,9 +285,6 @@
       <Filter>Header Files\Components\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Include\Engine\Physics\Octree.hpp">
-      <Filter>Header Files\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\Engine\Physics\Solver.hpp">
       <Filter>Header Files\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Include\Engine\Physics\Broadphase\Broadphase.hpp">

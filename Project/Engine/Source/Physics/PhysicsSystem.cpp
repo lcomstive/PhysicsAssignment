@@ -19,7 +19,6 @@ PhysicsSystem::PhysicsSystem(Application* app, milliseconds fixedTimestep) :
 	m_App(app),
 	m_Thread(),
 	m_Substeps(5),
-	m_Solver(nullptr),
 	m_CollidersMutex(),
 	m_LastTimeStep(-1ms),
 	m_ImpulseIteration(5),
@@ -33,8 +32,6 @@ PhysicsSystem::PhysicsSystem(Application* app, milliseconds fixedTimestep) :
 
 PhysicsSystem::~PhysicsSystem()
 {
-	if (m_Solver)
-		delete m_Solver;
 	if (m_Broadphase)
 		delete m_Broadphase;
 }
@@ -57,9 +54,6 @@ milliseconds PhysicsSystem::Timestep() { return m_FixedTimestep; }
 
 void PhysicsSystem::Start()
 {
-	if (!m_Solver)
-		SetSolver<LinearProjectionSolver>();
-
 	m_ThreadState.store((int)(m_PhysicsState = PhysicsPlayState::Playing));
 	m_Thread = thread(&PhysicsSystem::PhysicsLoop, this);
 }
@@ -183,7 +177,7 @@ void PhysicsSystem::PhysicsLoop()
 			rb->PreFixedUpdate(fixedTimestep);
 		m_App->FixedStep(fixedTimestep); // milliseconds -> seconds
 
-		RunSolver(collisions);
+		PositionalCorrect(collisions);
 
 		// Solve constraints
 		for (Collider* collider : m_Colliders)
@@ -201,15 +195,31 @@ void PhysicsSystem::PhysicsLoop()
 	}
 }
 
-void PhysicsSystem::RunSolver(vector<CollisionFrame>& collisions)
+void PhysicsSystem::PositionalCorrect(std::vector<CollisionFrame>& collisions)
 {
-	if (!m_Solver)
+	if (collisions.empty())
 		return;
 
-	m_Solver->SetCollisions(collisions);
+	for (CollisionFrame collision : collisions)
+	{
+		if (collision.ARigidbody->IsStatic())
+			continue;
+		bool dynamicB = collision.BRigidbody && !collision.BRigidbody->IsStatic();
 
-	m_Solver->PreSolve();
-	m_Solver->Solve(m_FixedTimestep.count() / 1000.0f);
+		float totalMass = collision.ARigidbody->InverseMass();
+		if (dynamicB)
+			totalMass += collision.BRigidbody->InverseMass();
+		if (totalMass == 0.0f)
+			continue;
+
+		float depth = fmaxf(collision.Result.PenetrationDepth - m_PenetrationSlack, 0.0f);
+		float scalar = (totalMass == 0.0f) ? 0.0f : depth / totalMass;
+		vec3 correction = collision.Result.Normal * scalar * m_LinearProjectionPercent;
+
+		collision.A->GetTransform()->Position -= correction * (dynamicB ? collision.ARigidbody->InverseMass() : 1.0f);
+		if (dynamicB)
+			collision.B->GetTransform()->Position += correction * collision.BRigidbody->InverseMass();
+	}
 }
 
 void PhysicsSystem::NarrowPhase(vector<CollisionFrame>& potentialCollisions)
