@@ -6,78 +6,86 @@ using namespace glm;
 using namespace Engine::Physics;
 using namespace Engine::Components;
 
-void Engine::Physics::SplitTree(OctreeNode* node, int depth)
+OctreeNode::OctreeNode() : Children(nullptr) {}
+
+OctreeNode::~OctreeNode()
 {
-	if (!node || depth-- <= 0)
+	if (Children)
+		delete[] Children;
+}
+
+void OctreeNode::Split(int depth)
+{
+	if (depth-- <= 0)
 		return;
 
-	if (!node->Children)
+	if (!Children)
 	{
 		// Create children
-		node->Children = new OctreeNode[8];
+		Children = new OctreeNode[8];
 
 		// Position
-		vec3 p = node->Bounds.Position;
+		vec3 p = Bounds.Position;
 		// Half extents
-		vec3 e = node->Bounds.Extents / 2.0f;
+		vec3 e = Bounds.Extents / 2.0f;
 
-		node->Children[0].Bounds = { p + vec3(-e.x,  e.y, -e.z), e };
-		node->Children[1].Bounds = { p + vec3(e.x,  e.y, -e.z), e };
-		node->Children[2].Bounds = { p + vec3(-e.x,  e.y,  e.z), e };
-		node->Children[3].Bounds = { p + vec3(e.x,  e.y,  e.z), e };
-		node->Children[4].Bounds = { p + vec3(-e.x, -e.y, -e.z), e };
-		node->Children[5].Bounds = { p + vec3(e.x, -e.y, -e.z), e };
-		node->Children[6].Bounds = { p + vec3(-e.x, -e.y,  e.z), e };
-		node->Children[7].Bounds = { p + vec3(e.x, -e.y,  e.z), e };
+		Children[0].Bounds = { p + vec3(-e.x,  e.y, -e.z), e };
+		Children[1].Bounds = { p + vec3( e.x,  e.y, -e.z), e };
+		Children[2].Bounds = { p + vec3(-e.x,  e.y,  e.z), e };
+		Children[3].Bounds = { p + vec3( e.x,  e.y,  e.z), e };
+		Children[4].Bounds = { p + vec3(-e.x, -e.y, -e.z), e };
+		Children[5].Bounds = { p + vec3( e.x, -e.y, -e.z), e };
+		Children[6].Bounds = { p + vec3(-e.x, -e.y,  e.z), e };
+		Children[7].Bounds = { p + vec3( e.x, -e.y,  e.z), e };
 	}
 
-	if (!node->Children || node->Colliders.empty())
+	if (!Children || Colliders.empty())
 		return;
 
 	for (uint32_t i = 0; i < 8; i++)
 	{
-		for (uint32_t j = 0; j < (uint32_t)node->Colliders.size(); j++)
+		for (uint32_t j = 0; j < (uint32_t)Colliders.size(); j++)
 		{
-			OBB bounds = node->Colliders[j]->GetBounds();
-			if (TestBoxBoxCollider(node->Children[i].Bounds, bounds))
-				node->Children[i].Colliders.emplace_back(node->Colliders[j]);
+			OBB& bounds = Colliders[j]->GetBounds();
+			if (TestBoxBoxCollider(Children[i].Bounds, bounds))
+				Children[i].Colliders.emplace_back(Colliders[j]);
 		}
 	}
 
-	node->Colliders.clear();
+	Colliders.clear();
 
 	for (int i = 0; i < 8; i++)
-		SplitTree(&node->Children[i], depth);
+		Children[i].Split(depth);
 }
 
-void Engine::Physics::Insert(OctreeNode* node, Collider* collider)
+void OctreeNode::Insert(Collider* collider)
 {
-	OBB bounds = collider->GetBounds();
-	if (!TestBoxBoxCollider(node->Bounds, bounds))
+	OBB& bounds = collider->GetBounds();
+	if (!TestBoxBoxCollider(Bounds, bounds))
 		return;
-	if (!node->Children)
-		node->Colliders.emplace_back(collider);
+	if (!Children)
+		Colliders.emplace_back(collider);
 	else
 		for (int i = 0; i < 8; i++)
-			Insert(&node->Children[i], collider);
+			Children[i].Insert(collider);
 }
 
-void Engine::Physics::Remove(OctreeNode* node, Collider* collider)
+void OctreeNode::Remove(Collider* collider)
 {
-	if (node->Children)
+	if (Children)
 	{
 		for (int i = 0; i < 8; i++)
-			Remove(&node->Children[i], collider);
+			Children[i].Remove(collider);
 		return;
 	}
 
-	const auto& it = find(node->Colliders.begin(), node->Colliders.end(), collider);
-	if (it != node->Colliders.end())
-		node->Colliders.erase(it);
+	const auto& it = find(Colliders.begin(), Colliders.end(), collider);
+	if (it != Colliders.end())
+		Colliders.erase(it);
 }
 
-void Engine::Physics::Update(OctreeNode* node, Collider* collider)
+void OctreeNode::Update(Collider* collider)
 {
-	Remove(node, collider);
-	Insert(node, collider);
+	Remove(collider);
+	Insert(collider);
 }

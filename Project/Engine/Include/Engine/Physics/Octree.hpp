@@ -11,17 +11,13 @@ namespace Engine::Physics
 		OctreeNode* Children;
 		std::vector<Components::Collider*> Colliders;
 
-		OctreeNode() : Children(nullptr) { }
-		~OctreeNode()
-		{
-			if (Children)
-				delete[] Children;
-		}
+		OctreeNode();
+		~OctreeNode();
+
+		void Split(int depth);
+
+		void Insert(Components::Collider* collider);
+		void Remove(Components::Collider* collider);
+		void Update(Components::Collider* collider);
 	};
-
-	void SplitTree(OctreeNode* node, int depth);
-
-	void Insert(OctreeNode* node, Components::Collider* collider);
-	void Remove(OctreeNode* node, Components::Collider* collider);
-	void Update(OctreeNode* node, Components::Collider* collider);
 }

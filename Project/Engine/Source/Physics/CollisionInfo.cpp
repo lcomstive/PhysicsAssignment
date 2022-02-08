@@ -17,32 +17,39 @@ using namespace Engine::Physics;
 using namespace Engine::Components;
 
 #pragma region Collision Tests
-bool Engine::Physics::TestSphereBoxCollider(Sphere a, OBB b)
+bool Engine::Physics::TestSphereBoxCollider(Sphere& a, OBB& b)
 {
 	vec3 closestPoint = b.GetClosestPoint(a.Position);
 	return distance(closestPoint, a.Position) < a.Radius;
 }
 
-bool Engine::Physics::TestSphereBoxCollider(Sphere a, AABB b)
+bool Engine::Physics::TestSphereBoxCollider(Sphere& a, AABB& b)
 {
 	vec3 closestPoint = b.GetClosestPoint(a.Position);
 	return distance(closestPoint, a.Position) < a.Radius;
 }
 
-bool Engine::Physics::TestSphereSphereCollider(Sphere a, Sphere b)
+bool Engine::Physics::TestSphereSphereCollider(Sphere& a, Sphere& b)
 {
 	float radius = a.Radius + b.Radius;
 	return MagnitudeSqr(b.Position - a.Position) < (radius * radius);
 }
 
-bool Engine::Physics::TestSpherePlaneCollider(Sphere a, Plane b)
+bool Engine::Physics::TestSpherePlaneCollider(Sphere& a, Plane& b)
 {
 	vec3 closestPoint = b.GetClosestPoint(a.Position);
 	return distance(closestPoint, a.Position) < a.Radius;
 }
 
-bool Engine::Physics::TestBoxBoxCollider(AABB a, OBB b) { return TestBoxBoxCollider(OBB{ a.Position, a.Extents, mat4(1.0f) }, b); }
-bool Engine::Physics::TestBoxBoxCollider(AABB a, AABB b)
+bool Engine::Physics::TestBoxBoxCollider(AABB& a, OBB& b)
+{
+	// TODO: Implement this properly?
+
+	OBB obb(a.Position, a.Extents);
+	return TestBoxBoxCollider(obb, b);
+}
+
+bool Engine::Physics::TestBoxBoxCollider(AABB& a, AABB& b)
 {
 	vec3 aMin = a.Min(), aMax = a.Max();
 	vec3 bMin = b.Min(), bMax = b.Max();
@@ -51,7 +58,7 @@ bool Engine::Physics::TestBoxBoxCollider(AABB a, AABB b)
 		aMin.z <= bMax.z && aMax.z >= bMin.z;
 }
 
-bool Engine::Physics::TestBoxBoxCollider(OBB a, OBB b)
+bool Engine::Physics::TestBoxBoxCollider(OBB& a, OBB& b)
 {
 	/// Separating Axis Theorem ///
 	// Axes to test against
@@ -79,7 +86,7 @@ bool Engine::Physics::TestBoxBoxCollider(OBB a, OBB b)
 	return true;
 }
 
-bool Engine::Physics::TestBoxPlaneCollider(OBB a, Plane b)
+bool Engine::Physics::TestBoxPlaneCollider(OBB& a, Plane& b)
 {
 	vec3 rot[] = { a.Orientation[0], a.Orientation[1], a.Orientation[2] };
 	float planeLength = a.Extents.x * fabsf(dot(b.Normal, rot[0])) +
@@ -91,7 +98,7 @@ bool Engine::Physics::TestBoxPlaneCollider(OBB a, Plane b)
 	return t > 0;
 }
 
-bool Engine::Physics::TestPlanePlaneCollider(Plane a, Plane b)
+bool Engine::Physics::TestPlanePlaneCollider(Plane& a, Plane& b)
 {
 	vec3 d = cross(a.Normal, b.Normal);
 	return abs(dot(d, d)) < 0.0001f;
@@ -236,6 +243,7 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(OBB a, OBB b)
 	return result;
 }
 
+#if 0
 const unordered_map<type_index, unordered_map<type_index, function<CollisionManifold(Collider*, Collider*)>>> CollisionTests =
 {
 	{
@@ -281,4 +289,39 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(Collider* a, Collider* 
 	Log::Warning("No valid collision manifold test found for '" + string(aColliderType.name()) + "' -> '" + string(bColliderType.name()) + "'");
 	return CollisionManifold{};
 }
+#else
+const type_index BoxColliderType	= typeid(BoxCollider);
+const type_index SphereColliderType = typeid(SphereCollider);
+const type_index PlaneColliderType	= typeid(PlaneCollider);
+
+CollisionManifold Engine::Physics::FindCollisionFeatures(Collider* a, Collider* b)
+{
+	Log::Assert(a != nullptr && b != nullptr, "Cannot find collision features without valid colliders!");
+
+	type_index aColliderType = typeid(*a);
+	type_index bColliderType = typeid(*b);
+
+	if (aColliderType == BoxColliderType)
+	{
+		if (bColliderType == BoxColliderType)
+			return FindCollisionFeatures(((BoxCollider*)a)->GetOBB(), ((BoxCollider*)b)->GetOBB());
+		else if (bColliderType == SphereColliderType)
+			return FindCollisionFeatures(((BoxCollider*)a)->GetOBB(), ((SphereCollider*)b)->GetSphere());
+	}
+	else if (aColliderType == SphereColliderType)
+	{
+		if (bColliderType == SphereColliderType)
+			return FindCollisionFeatures(((SphereCollider*)a)->GetSphere(), ((SphereCollider*)b)->GetSphere());
+		else if (bColliderType == BoxColliderType)
+		{
+			CollisionManifold manifold = FindCollisionFeatures(((BoxCollider*)b)->GetOBB(), ((SphereCollider*)a)->GetSphere());
+			manifold.Normal *= -1.0f; // Invert because box collider is first argument
+			return manifold;
+		}
+	}
+
+	Log::Warning("No valid collision manifold test found for '" + string(aColliderType.name()) + "' -> '" + string(bColliderType.name()) + "'");
+	return {};
+}
+#endif
 #pragma endregion

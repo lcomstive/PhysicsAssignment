@@ -21,7 +21,7 @@ namespace Engine::Physics
 		glm::vec3 Start;
 		glm::vec3 End;
 
-		Line(glm::vec3 start, glm::vec3 end);
+		Line(glm::vec3 start = glm::vec3(0), glm::vec3 end = glm::vec3(0));
 
 		float Length();
 		float LengthSqr();
@@ -81,19 +81,23 @@ namespace Engine::Physics
 	struct OBB
 	{
 		glm::vec3 Position;
-		glm::vec3 Extents; // Half size
+		glm::vec3 Extents; // Size
 		glm::mat3 Orientation;
 
-		bool IsPointInside(glm::vec3& point);
-		glm::vec3 GetClosestPoint(glm::vec3& point);
+		OBB(glm::vec3 position = { 0, 0, 0 },
+			glm::vec3 extents = { 1, 1, 1 },
+			glm::mat3 orientation = glm::mat3(1.0f));
+
+		bool IsPointInside(glm::vec3& point) const;
+		glm::vec3 GetClosestPoint(glm::vec3& point) const;
 		Interval GetInterval(const glm::vec3& axis);
 		bool OverlapOnAxis(OBB& other, glm::vec3& axis);
 
-		std::vector<Line> GetEdges();
-		std::vector<Plane> GetPlanes();
-		std::vector<glm::vec3> GetVertices();
+		std::vector<Line>& GetEdges();
+		std::vector<Plane>& GetPlanes();
+		std::vector<glm::vec3>& GetVertices();
 		
-		std::vector<glm::vec3> ClipEdges(std::vector<Line> edges);
+		std::vector<glm::vec3> ClipEdges(std::vector<Line>& edges);
 		bool ClipToPlane(Plane& plane, Line& line, glm::vec3* result);
 		float PenetrationDepth(OBB& other, glm::vec3& axis, bool* outShouldFlip);
 
@@ -102,6 +106,13 @@ namespace Engine::Physics
 
 		/// <returns>Success if line intersects this object</returns>
 		bool LineTest(Line& line);
+
+	private:
+		std::vector<Line> m_Lines;
+		std::vector<Plane> m_Planes;
+		std::vector<glm::vec3> m_Vertices;
+
+		glm::vec3 m_VertexPosition, m_VertexExtents;
 	};
 
 	struct Sphere
@@ -109,7 +120,7 @@ namespace Engine::Physics
 		glm::vec3 Position = { 0, 0, 0 };
 		float Radius = 1.0f;
 
-		bool IsPointInside(glm::vec3& point);
+		bool IsPointInside(glm::vec3& point) const;
 
 		/// <summary>
 		/// Gets the closest point along the sphere's surface
@@ -181,7 +192,7 @@ namespace Engine::Physics
 		/// <summary>
 		/// Checks where point is relative to plane
 		/// </summary>
-		PlaneIntersection CheckPoint(glm::vec3 point);
+		PlaneIntersection CheckPoint(glm::vec3& point) const;
 
 		glm::vec3 GetClosestPoint(glm::vec3& point);
 

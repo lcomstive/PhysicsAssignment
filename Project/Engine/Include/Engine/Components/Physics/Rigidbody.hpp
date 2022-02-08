@@ -83,8 +83,9 @@ namespace Engine::Components
 		void Added() override;
 		void Removed() override;
 
-		glm::mat4 InverseTensor();
+		glm::mat4& InverseTensor();
 
+		void CheckSleeping();
 		void ApplyWorldForces();
 		void PreFixedUpdate(float timestep);
 		void SolveConstraints(float timestep);

@@ -40,10 +40,11 @@ float Rigidbody::PotentialEnergy() { return m_Mass * dot(GetSystem().GetGravity(
 void Rigidbody::Added() { GetGameObject()->GetScene()->GetPhysics().AddRigidbody(this); }
 void Rigidbody::Removed() { GetGameObject()->GetScene()->GetPhysics().RemoveRigidbody(this); }
 
-mat4 Rigidbody::InverseTensor()
+const mat4 DefaultTensor = inverse(mat4(0.0f));
+mat4& Rigidbody::InverseTensor()
 {
 	Collider* collider = GetGameObject()->GetComponent<Collider>(true);
-	return collider ? collider->InverseTensor() : inverse(mat4(0.0f));
+	return collider ? collider->InverseTensor() : (mat4&)DefaultTensor;
 }
 
 void Rigidbody::ApplyForce(glm::vec3 force, ForceMode mode)
@@ -72,6 +73,12 @@ void Rigidbody::ApplyWorldForces()
 	ApplyForce(GetSystem().GetGravity() * m_Mass);
 }
 
+void Rigidbody::CheckSleeping()
+{
+	m_Sleeping = MagnitudeSqr(m_Velocity) < InverseMass() &&
+		MagnitudeSqr(m_AngularVelocity) < 0.005f;
+}
+
 void Rigidbody::PreFixedUpdate(float timestep)
 {
 	if(m_IsStatic)
@@ -85,14 +92,11 @@ void Rigidbody::PreFixedUpdate(float timestep)
 	m_Velocity += (acceleration * timestep) * damping;
 
 	// Angular motion
-	vec3 angAccel = vec3(InverseTensor() * vec4(m_Torque, 1.0f));
+	vec3 angAccel = vec3(vec4(m_Torque, 1.0f) * InverseTensor());
 	m_AngularVelocity += (angAccel * timestep) * damping;
 
-	// Apply motion
-	m_Sleeping = MagnitudeSqr(m_Velocity) < InverseMass() &&
-					MagnitudeSqr(m_AngularVelocity) < 0.005f;
-
 	m_Force = vec3(0.0f);
+	CheckSleeping();
 	if (m_Sleeping && CanSleep)
 		return;
 
@@ -114,8 +118,8 @@ void Rigidbody::ApplyImpulse(Rigidbody* other, CollisionManifold manifold, int c
 	vec3 r2 = manifold.Contacts[contactIndex] - other->GetTransform()->Position;
 
 	// Store inverse tensors
-	mat4 i1 = InverseTensor();
-	mat4 i2 = other->InverseTensor();
+	const mat4& i1 = InverseTensor();
+	const mat4& i2 = other->InverseTensor();
 
 	vec3 relativeVel = (other->m_Velocity + cross(other->m_AngularVelocity, r2)) -
 						(m_Velocity + cross(m_AngularVelocity, r1));
@@ -184,8 +188,8 @@ void Rigidbody::ApplyImpulse(Collider* other, CollisionManifold manifold, int co
 	vec3 r2 = manifold.Contacts[contactIndex] - other->GetTransform()->Position;
 
 	// Store inverse tensors
-	mat4 i1 = InverseTensor();
-	mat4 i2 = other->InverseTensor();
+	mat4& i1 = InverseTensor();
+	mat4& i2 = other->InverseTensor();
 
 	vec3 relativeVel = -(m_Velocity + cross(m_AngularVelocity, r1));
 	vec3 relativeNorm = normalize(manifold.Normal);

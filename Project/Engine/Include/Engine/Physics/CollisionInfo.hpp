@@ -7,17 +7,17 @@ namespace Engine::Components { struct Collider; }
 namespace Engine::Physics
 {
 #pragma region Collision Tests
-	bool TestSphereBoxCollider(Sphere a, OBB b);
-	bool TestSphereBoxCollider(Sphere a, AABB b);
-	bool TestSpherePlaneCollider(Sphere a, Plane b);
-	bool TestSphereSphereCollider(Sphere a, Sphere b);
+	bool TestSphereBoxCollider(Sphere& a, OBB& b);
+	bool TestSphereBoxCollider(Sphere& a, AABB& b);
+	bool TestSpherePlaneCollider(Sphere& a, Plane& b);
+	bool TestSphereSphereCollider(Sphere& a, Sphere& b);
 
-	bool TestBoxBoxCollider(OBB a, OBB b);
-	bool TestBoxBoxCollider(AABB a, OBB b);
-	bool TestBoxBoxCollider(AABB a, AABB b);
-	bool TestBoxPlaneCollider(OBB a, Plane b);
+	bool TestBoxBoxCollider(OBB& a, OBB& b);
+	bool TestBoxBoxCollider(AABB& a, OBB& b);
+	bool TestBoxBoxCollider(AABB& a, AABB& b);
+	bool TestBoxPlaneCollider(OBB& a, Plane& b);
 	
-	bool TestPlanePlaneCollider(Plane a, Plane b);
+	bool TestPlanePlaneCollider(Plane& a, Plane& b);
 #pragma endregion
 
 #pragma region Collision Manifolds

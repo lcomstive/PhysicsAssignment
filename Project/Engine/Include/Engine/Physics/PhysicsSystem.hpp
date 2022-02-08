@@ -9,6 +9,7 @@
 #include <Engine/Physics/Octree.hpp>
 #include <Engine/Physics/Solver.hpp>
 #include <Engine/Components/Physics/Collider.hpp>
+#include <Engine/Physics/Broadphase/Broadphase.hpp>
 
 using namespace std::chrono_literals;
 
@@ -19,17 +20,6 @@ namespace Engine::Components { struct Rigidbody; }
 namespace Engine::Physics
 {
 	enum class PhysicsPlayState : int { Stopped = 0, Playing, Paused };
-	
-	struct CollisionFrame
-	{
-		Components::Collider* A;
-		Components::Rigidbody* ARigidbody;
-
-		Components::Collider* B;
-		Components::Rigidbody* BRigidbody = nullptr;
-
-		CollisionManifold Result;
-	};
 
 	class PhysicsSystem
 	{
@@ -41,7 +31,7 @@ namespace Engine::Physics
 		std::condition_variable pauseConditional; // Notifies thread when to unpause
 
 		Solver* m_Solver;
-		OctreeNode* m_Octree;
+		Broadphase* m_Broadphase;
 		PhysicsPlayState m_PhysicsState;
 		glm::vec3 m_Gravity = { 0, -9.81f, 0 };
 		std::chrono::milliseconds m_LastTimeStep;
@@ -62,17 +52,15 @@ namespace Engine::Physics
 		std::vector<Components::Collider*> Query(OctreeNode* node, AABB& bounds);
 		std::vector<Components::Collider*> Query(OctreeNode* node, Sphere& bounds);
 		Components::Collider* Raycast(OctreeNode* node, Ray& ray, RaycastHit* outResult);
-		bool LineTest(OctreeNode* node, Line& line, Engine::Components::Collider* ignoreCollider);
+		bool LineTest(OctreeNode* node, Line& line, Components::Collider* ignoreCollider);
 		Components::Collider* Raycast(OctreeNode* node, Ray& ray, Engine::Components::Collider* ignoreCollider, RaycastHit* outResult);
 		Components::Collider* FindClosest(std::vector<Components::Collider*>& set, Ray& ray, RaycastHit* outResult);
 
-		std::vector<CollisionFrame> m_Collisions, m_PreviousCollisions;
-
-		void RunSolver();
-		void FindCollisions();
+		void RunSolver(std::vector<CollisionFrame>& collisions);
+		void NarrowPhase(std::vector<CollisionFrame>& potentialCollisions);
 		
-		friend struct Engine::Components::Collider;
-		friend struct Engine::Components::Rigidbody;
+		friend struct Components::Collider;
+		friend struct Components::Rigidbody;
 
 	protected:
 		/// <summary>
@@ -87,6 +75,11 @@ namespace Engine::Physics
 		/// </summary>
 		int m_Substeps;
 
+		/// <summary>
+		/// Maximum depth of acceleration octree
+		/// </summary>
+		unsigned int m_MaxOctreeRecursions = 5;
+
 	public:
 		PhysicsSystem(Engine::Application* app, std::chrono::milliseconds fixedTimeStep = 50ms);
 		~PhysicsSystem();
@@ -100,14 +93,8 @@ namespace Engine::Physics
 		void Pause();
 		void TogglePause();
 
-		/// <summary>
-		/// Generates a structure internally that speeds up queries & raycasts
-		/// </summary>
-		/// <returns>Acceleration success</returns>
-		bool Accelerate(glm::vec3& position, float size, int maxRecursions = 5);
-
-		std::chrono::milliseconds LastTimeStep();
 		std::chrono::milliseconds Timestep();
+		std::chrono::milliseconds LastTimeStep();
 		void SetTimestep(std::chrono::milliseconds timestep);
 
 		void SetGravity(glm::vec3 gravity);
@@ -127,10 +114,22 @@ namespace Engine::Physics
 			return (T*)m_Solver;
 		}
 
-		bool LineTest(Line line, Engine::Components::Collider* ignoreCollider);
-		Engine::Components::Collider* Raycast(Ray ray, RaycastHit* outResult = nullptr);
-		Engine::Components::Collider* Raycast(Ray ray, Engine::Components::Collider* ignoreCollider, RaycastHit* outResult = nullptr);
-		std::vector<Engine::Components::Collider*> Query(Sphere& bounds);
-		std::vector<Engine::Components::Collider*> Query(AABB& bounds);
+		template<typename T, class... Args>
+		T* SetBroadphase(Args... args)
+		{
+			Log::Assert(std::is_base_of<Broadphase, T>(), "Broadphase needs to have base class of Engine::Phyics::Broadphase");
+
+			if (m_Broadphase)
+				delete m_Broadphase;
+
+			m_Broadphase = new T(args...);
+			return (T*)m_Broadphase;
+		}
+
+		bool LineTest(Line line, Components::Collider* ignoreCollider);
+		Components::Collider* Raycast(Ray ray, RaycastHit* outResult = nullptr);
+		Components::Collider* Raycast(Ray ray, Components::Collider* ignoreCollider, RaycastHit* outResult = nullptr);
+		std::vector<Components::Collider*> Query(Sphere& bounds);
+		std::vector<Components::Collider*> Query(AABB& bounds);
 	};
 }

@@ -14,20 +14,23 @@ namespace Engine::Components
 	/// </summary>
 	struct Collider : public Component
 	{
-		virtual Physics::OBB GetBounds() const = 0;
+		virtual Physics::OBB& GetBounds() = 0;
 		virtual bool LineTest(Physics::Line& line) = 0;
-		virtual bool IsPointInside(glm::vec3 point) const = 0;
+		virtual bool IsPointInside(glm::vec3& point) const = 0;
 		virtual bool Raycast(Physics::Ray& ray, Physics::RaycastHit* outResult = nullptr) = 0;
 
-		virtual bool CheckCollision(const Collider* other) const = 0;
-		virtual bool CheckCollision(const BoxCollider* other) const = 0;
-		virtual bool CheckCollision(const PlaneCollider* other) const = 0;
-		virtual bool CheckCollision(const SphereCollider* other) const = 0;
+		virtual bool CheckCollision(Collider* other) = 0;
+		virtual bool CheckCollision(BoxCollider* other) = 0;
+		virtual bool CheckCollision(PlaneCollider* other) = 0;
+		virtual bool CheckCollision(SphereCollider* other) = 0;
 
-		virtual glm::mat4 InverseTensor() { return inverse(glm::mat4(0.0f)); }
+		virtual glm::mat4& InverseTensor();
 
 	protected:
 		virtual void Added() override;
 		virtual void Removed() override;
+
+	private:
+		glm::mat4 m_InverseTensor = glm::mat4(0.0f);
 	};
 }

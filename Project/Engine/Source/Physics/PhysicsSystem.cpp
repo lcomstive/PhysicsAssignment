@@ -18,23 +18,25 @@ const vec3 InitialGravity = { 0, -9.81f, 0 };
 PhysicsSystem::PhysicsSystem(Application* app, milliseconds fixedTimestep) :
 	m_App(app),
 	m_Thread(),
+	m_Substeps(5),
 	m_Solver(nullptr),
-	m_Octree(nullptr),
+	m_CollidersMutex(),
 	m_LastTimeStep(-1ms),
-	m_ImpulseIteration(10),
-	m_PreviousCollisions(),
+	m_ImpulseIteration(5),
+	m_Broadphase(nullptr),
 	m_Gravity(InitialGravity),
 	m_FixedTimestep(fixedTimestep),
 	m_ThreadState((int)(m_PhysicsState = PhysicsPlayState::Stopped))
 {
-	// TODO: Fine tune this, or have function for variability
-	m_Collisions.reserve(100);
+	SetBroadphase<BasicBroadphase>();
 }
 
 PhysicsSystem::~PhysicsSystem()
 {
-	if (m_Octree)
-		delete m_Octree;
+	if (m_Solver)
+		delete m_Solver;
+	if (m_Broadphase)
+		delete m_Broadphase;
 }
 
 void PhysicsSystem::SetTimestep(milliseconds timestep)
@@ -94,30 +96,13 @@ void PhysicsSystem::TogglePause()
 
 PhysicsPlayState PhysicsSystem::GetState() { return m_PhysicsState; }
 
-bool PhysicsSystem::Accelerate(vec3& position, float size, int maxRecursions)
-{
-	if (m_Octree)
-		return false;
-
-	vec3 min = position - vec3{ size, size, size };
-	vec3 max = position + vec3{ size, size, size };
-
-	m_Octree = new OctreeNode();
-	m_Octree->Bounds = AABB::FromMinMax(min, max);
-	m_Octree->Children = nullptr;
-	for (uint32_t i = 0; i < m_Colliders.size(); i++)
-		m_Octree->Colliders.emplace_back(m_Colliders[i]);
-	SplitTree(m_Octree, maxRecursions);
-	return true;
-}
-
 void PhysicsSystem::AddCollider(Collider* collider)
 {
 	lock_guard guard(m_CollidersMutex);
 	m_Colliders.emplace_back(collider);
 
-	if (m_Octree)
-		Insert(m_Octree, collider);
+	if (m_Broadphase)
+		m_Broadphase->Insert(collider);
 }
 
 void PhysicsSystem::RemoveCollider(Collider* collider)
@@ -129,8 +114,8 @@ void PhysicsSystem::RemoveCollider(Collider* collider)
 		m_Colliders.erase(it);
 	}
 
-	if (m_Octree)
-		Remove(m_Octree, collider);
+	if (m_Broadphase)
+		m_Broadphase->Remove(collider);
 }
 
 void PhysicsSystem::AddRigidbody(Rigidbody* rb)
@@ -160,15 +145,14 @@ void PhysicsSystem::PhysicsLoop()
 			pauseConditional.wait(lock, [&] { return m_PhysicsState != PhysicsPlayState::Paused; });
 		}
 
+		Log::Assert(m_Broadphase, "A broadphase is required! Use PhysicsSystem::SetBroadphase to set one");
+
 		time_point timeStart = high_resolution_clock::now();
 
-		m_CollidersMutex.lock();
-		m_PreviousCollisions = m_Collisions;
-		m_Collisions.clear();
-		m_CollidersMutex.unlock();
-
 		// Check for collisions
-		FindCollisions();
+		vector<CollisionFrame>& collisions = m_Broadphase->GetPotentialCollisions();
+
+		NarrowPhase(collisions); // Test potential collisions & generate manifolds
 
 		// Apply additional external forces (like gravity)
 		for (Collider* collider : m_Colliders)
@@ -181,7 +165,7 @@ void PhysicsSystem::PhysicsLoop()
 		// Apply linear impulse resolution
 		for (int k = 0; k < m_ImpulseIteration; k++)
 		{
-			for (CollisionFrame collision : m_Collisions)
+			for (CollisionFrame collision : collisions)
 			{
 				int jSize = (int)collision.Result.Contacts.size();
 				for (int j = 0; j < jSize; j++)
@@ -199,7 +183,7 @@ void PhysicsSystem::PhysicsLoop()
 			rb->PreFixedUpdate(fixedTimestep);
 		m_App->FixedStep(fixedTimestep); // milliseconds -> seconds
 
-		RunSolver();
+		RunSolver(collisions);
 
 		// Solve constraints
 		for (Collider* collider : m_Colliders)
@@ -211,296 +195,57 @@ void PhysicsSystem::PhysicsLoop()
 
 		m_LastTimeStep = duration_cast<milliseconds>(high_resolution_clock::now() - timeStart);
 		milliseconds remainingTime = m_FixedTimestep - m_LastTimeStep;
-		Log::Debug("Remaining Time: " + to_string(remainingTime.count()));
+
 		if (remainingTime.count() > 0)
 			this_thread::sleep_for(remainingTime);
 	}
 }
 
-void PhysicsSystem::RunSolver()
+void PhysicsSystem::RunSolver(vector<CollisionFrame>& collisions)
 {
 	if (!m_Solver)
 		return;
 
-	m_Solver->SetCollisions(m_Collisions);
+	m_Solver->SetCollisions(collisions);
 
 	m_Solver->PreSolve();
 	m_Solver->Solve(m_FixedTimestep.count() / 1000.0f);
 }
 
-void PhysicsSystem::FindCollisions()
+void PhysicsSystem::NarrowPhase(vector<CollisionFrame>& potentialCollisions)
 {
-	vector<pair<int, int>> collisionIndices = {};
-	for (int i = 0, size = (int)m_Colliders.size(); i < size; i++)
+	for (int i = (int)potentialCollisions.size() - 1; i >= 0; i--)
 	{
-		for (int j = 0; j < size; j++)
+		potentialCollisions[i].Result = FindCollisionFeatures(potentialCollisions[i].A, potentialCollisions[i].B);
+
+		if (!potentialCollisions[i].Result.IsColliding)
 		{
-			if (i == j)
-				continue;
+			potentialCollisions.erase(potentialCollisions.begin() + i);
+			continue;
+		}
 
-			// Check for duplicates
-			bool duplicate = false;
-			for (pair<int, int>& index : collisionIndices)
-			{
-				if ((index.first == i && index.second == j) ||
-					(index.first == j && index.second == i))
-				{
-					duplicate = true;
-					break;
-				}
-			}
-			if (duplicate)
-				continue;
+		if (!potentialCollisions[i].ARigidbody || potentialCollisions[i].ARigidbody->IsStatic())
+		{
+			// A valid non-static rigidbody needs to be in A
 
-			Rigidbody* aRb = m_Colliders[i]->GetRigidbody();
-			if (!aRb)
-				continue; // Collider needs rigidbody to calculate results
-
-			CollisionManifold result = FindCollisionFeatures(m_Colliders[i], m_Colliders[j]);
-			if (!result.IsColliding)
-				continue;
-
-			m_Collisions.emplace_back(CollisionFrame
-				{
-					m_Colliders[i],
-					aRb,
-					m_Colliders[j],
-					m_Colliders[j]->GetRigidbody(),
-					result
-				});
-
-			collisionIndices.emplace_back(make_pair(i, j));
+			Collider* temp = potentialCollisions[i].A;
+			potentialCollisions[i].A = potentialCollisions[i].B;
+			potentialCollisions[i].ARigidbody = potentialCollisions[i].BRigidbody;
+			potentialCollisions[i].B = temp;
+			potentialCollisions[i].BRigidbody = nullptr;
+			potentialCollisions[i].Result.Normal *= -1.0f;
 		}
 	}
 }
 
 Collider* PhysicsSystem::Raycast(Ray ray, RaycastHit* outResult) { return Raycast(ray, nullptr, outResult); }
-Collider* PhysicsSystem::Raycast(Ray ray, Collider* ignoreCollider, RaycastHit* outResult)
-{
-	if (m_Octree)
-		return Raycast(m_Octree, ray, ignoreCollider, outResult);
-
-	Collider* closest = nullptr;
-	RaycastHit hit = {}, closestHit = {};
-
-	m_CollidersMutex.lock();
-	vector<Collider*> colliders = m_Colliders;
-	m_CollidersMutex.unlock();
-
-	for (int i = 0; i < colliders.size(); i++)
-	{
-		if (colliders[i] == ignoreCollider ||
-			!colliders[i]->Raycast(ray, &hit) ||
-			(closest && hit.Distance >= closestHit.Distance))
-			continue;
-		closest = colliders[i];
-		closestHit = hit;
-	}
-
-	if (outResult)
-		*outResult = closestHit;
-	return closest;
-}
-
-vector<Collider*> PhysicsSystem::Query(Sphere& bounds)
-{
-	if (m_Octree)
-		return Query(m_Octree, bounds);
-
-	vector<Collider*> output;
-
-	m_CollidersMutex.lock();
-	vector<Collider*> colliders = m_Colliders;
-	m_CollidersMutex.unlock();
-
-	for (int i = 0; i < colliders.size(); i++)
-	{
-		if (TestSphereBoxCollider(bounds, colliders[i]->GetBounds()))
-			output.emplace_back(colliders[i]);
-	}
-	return output;
-}
-
-vector<Collider*> PhysicsSystem::Query(AABB& bounds)
-{
-	if (m_Octree)
-		return Query(m_Octree, bounds);
-
-	vector<Collider*> output;
-
-	m_CollidersMutex.lock();
-	vector<Collider*> colliders = m_Colliders;
-	m_CollidersMutex.unlock();
-
-	for (int i = 0; i < colliders.size(); i++)
-	{
-		if (TestBoxBoxCollider(bounds, colliders[i]->GetBounds()))
-			output.emplace_back(colliders[i]);
-	}
-	return output;
-}
-
-Collider* PhysicsSystem::FindClosest(std::vector<Collider*>& set, Ray& ray, RaycastHit* outResult)
-{
-	if (set.size() == 0)
-		return nullptr;
-
-	Collider* closest = nullptr;
-	float closestDistance = 99999;
-	for (uint32_t i = 0; i < (uint32_t)set.size(); i++)
-	{
-		RaycastHit hit;
-		if (!set[i]->Raycast(ray, &hit) ||
-			hit.Distance >= closestDistance)
-			continue;
-		closest = set[i];
-		closestDistance = hit.Distance;
-
-		if (outResult)
-			*outResult = hit;
-	}
-	return closest;
-}
-
-Collider* PhysicsSystem::Raycast(OctreeNode* node, Ray& ray, RaycastHit* outResult) { return Raycast(node, ray, nullptr, outResult); }
-Collider* PhysicsSystem::Raycast(OctreeNode* node, Ray& ray, Collider* ignoreCollider, RaycastHit* outResult)
-{
-	if (outResult)
-		*outResult = {}; // Set to initial values
-
-	RaycastHit hit;
-	if (!node->Bounds.Raycast(ray, &hit))
-		return nullptr;
-	if (!node->Children) // Leaf node, check colliders
-		return FindClosest(node->Colliders, ray, outResult);
-
-	vector<Collider*> results;
-	for (int i = 0; i < 8; i++)
-	{
-		Collider* result = Raycast(&node->Children[i], ray, outResult);
-		if (result && result != ignoreCollider)
-			results.emplace_back(result);
-	}
-
-	// Find closest result
-	return FindClosest(results, ray, outResult);
-}
-
-vector<Collider*> PhysicsSystem::Query(OctreeNode* node, AABB& box)
-{
-	vector<Collider*> results;
-	if (!TestBoxBoxCollider(box, node->Bounds))
-		return results;
-	if (node->Children)
-	{
-		for (int i = 0; i < 8; i++)
-		{
-			vector<Collider*> child = Query(&node[i], box);
-			if (child.size() > 0)
-				results.insert(results.end(), child.begin(), child.end());
-		}
-	}
-	else
-	{
-		for (uint32_t i = 0; i < (uint32_t)node->Colliders.size(); i++)
-		{
-			OBB bounds = node->Colliders[i]->GetBounds();
-			if (TestBoxBoxCollider(box, bounds))
-				results.emplace_back(node->Colliders[i]);
-		}
-	}
-	return results;
-}
-
-vector<Collider*> PhysicsSystem::Query(OctreeNode* node, Sphere& sphere)
-{
-	vector<Collider*> results;
-	if (!TestSphereBoxCollider(sphere, node->Bounds))
-		return results;
-	if (node->Children)
-	{
-		for (int i = 0; i < 8; i++)
-		{
-			vector<Collider*> child = Query(&node[i], sphere);
-			if (child.size() > 0)
-				results.insert(results.end(), child.begin(), child.end());
-		}
-	}
-	else
-	{
-		for (uint32_t i = 0; i < (uint32_t)node->Colliders.size(); i++)
-		{
-			OBB bounds = node->Colliders[i]->GetBounds();
-			if (TestSphereBoxCollider(sphere, bounds))
-				results.emplace_back(node->Colliders[i]);
-		}
-	}
-	return results;
-}
-
-bool PhysicsSystem::LineTest(OctreeNode* node, Line& line, Engine::Components::Collider* ignoreCollider)
-{
-	if (!node->Bounds.LineTest(line))
-		return false;
-	if (node->Children) // Leaf node, check colliders
-	{
-		for (int i = 0; i < 8; i++)
-			if (LineTest(&node->Children[i], line, ignoreCollider))
-				return true;
-		return false;
-	}
-
-	for (uint32_t i = 0; i < (uint32_t)node->Colliders.size(); i++)
-	{
-		if (node->Colliders[i] != ignoreCollider &&
-			node->Colliders[i]->LineTest(line))
-			return true;
-	}
-	return false;
-}
-
-bool PhysicsSystem::LineTest(Line line, Engine::Components::Collider* ignoreCollider)
-{
-	if (m_Octree)
-		return LineTest(m_Octree, line, ignoreCollider);
-
-	Collider* closest = nullptr;
-	RaycastHit hit = {}, closestHit = {};
-
-	m_CollidersMutex.lock();
-	vector<Collider*> colliders = m_Colliders;
-	m_CollidersMutex.unlock();
-
-	for (int i = 0; i < colliders.size(); i++)
-	{
-		if (colliders[i] == ignoreCollider ||
-			!colliders[i]->LineTest(line) ||
-			(closest && hit.Distance >= closestHit.Distance))
-			continue;
-		closest = colliders[i];
-		closestHit = hit;
-	}
-
-	return closest;
-}
+vector<Collider*> PhysicsSystem::Query(AABB& bounds) { return m_Broadphase ? m_Broadphase->Query(bounds) : vector<Collider*>(); }
+vector<Collider*> PhysicsSystem::Query(Sphere& bounds) { return m_Broadphase ? m_Broadphase->Query(bounds) : vector<Collider*>(); }
+bool PhysicsSystem::LineTest(Line line, Engine::Components::Collider* ignoreCollider) { return m_Broadphase ? m_Broadphase->LineTest(line, ignoreCollider) : false; }
+Collider* PhysicsSystem::Raycast(Ray ray, Collider* ignoreCollider, RaycastHit* outResult) { return m_Broadphase ? m_Broadphase->Raycast(ray, ignoreCollider, outResult) : nullptr; }
 
 void PhysicsSystem::DrawGizmos()
 {
-	// Make copy of collisions, using mutexes for thread safety
-	m_CollidersMutex.lock();
-	auto collisions = m_PreviousCollisions;
-	m_CollidersMutex.unlock();
-
-	for (CollisionFrame collision : collisions)
-	{
-		// Draw collision normal
-		Gizmos::Colour = { 1, 0, 1, 1 };
-		vec3 position = collision.A->GetTransform()->Position;
-		Gizmos::DrawCube(position, vec3{ 0.01f, 0.01f, 0.01f } + collision.Result.Normal);
-
-		// Draw contact points
-		Gizmos::Colour = { 0, 1, 1, 1 };
-		for (vec3 contactPoint : collision.Result.Contacts)
-			Gizmos::DrawSphere(contactPoint, 0.05f);
-	}
+	if (m_Broadphase)
+		m_Broadphase->DrawGizmos();
 }

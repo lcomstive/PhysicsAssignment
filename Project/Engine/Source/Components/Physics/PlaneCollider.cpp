@@ -13,52 +13,71 @@ using namespace Engine::Physics;
 using namespace Engine::Graphics;
 using namespace Engine::Components;
 
+const vec3 Extents = vec3(10000, 10000, 10000);
+
+PlaneCollider::PlaneCollider(glm::vec3 normal, float distance)
+{
+	SetNormal(normal);
+	SetDistance(distance);
+}
+
 void PlaneCollider::DrawGizmos()
 {
 #ifndef NDEBUG
 	Gizmos::Colour = { 0, 1, 0, 1 };
-	Gizmos::DrawWireQuad(Normal * Distance, { 100.0f, 100.0f }, eulerAngles(quatLookAt(Normal, { 0, 1, 0 })));
+	Gizmos::DrawWireQuad(
+		m_Plane.Normal * m_Plane.Distance,
+		{ 100.0f, 100.0f },
+		eulerAngles(quatLookAt(m_Plane.Normal, { 0, 1, 0 }))
+	);
 #endif
 }
 
-Plane PlaneCollider::BuildPlane() const { return Plane(Normal, Distance); }
+OBB& PlaneCollider::GetBounds() { return m_Bounds; }
+Plane& PlaneCollider::GetPlane() { return m_Plane; }
 
-OBB PlaneCollider::GetBounds() const
+float& PlaneCollider::GetDistance() { return m_Plane.Distance; }
+void PlaneCollider::SetDistance(float value)
 {
-	return OBB
-	{
-		Normal * Distance,
-		{ 1000, 1000, 1000 },
-		lookAt({ 0, 0, 0 }, Normal, { 0, 1, 0 })
-	};
+	m_Plane.Distance = value;
+	m_Bounds.Position = m_Plane.Normal * m_Plane.Distance;
 }
 
-bool PlaneCollider::LineTest(Line& line) { return BuildPlane().LineTest(line); }
-bool PlaneCollider::Raycast(Ray& ray, RaycastHit* outResult) { return BuildPlane().Raycast(ray, outResult); }
-bool PlaneCollider::IsPointInside(glm::vec3 point) const { return BuildPlane().CheckPoint(point) == PlaneIntersection::Intersecting; }
+glm::vec3& PlaneCollider::GetNormal() { return m_Plane.Normal; }
+void PlaneCollider::SetNormal(glm::vec3 value)
+{
+	m_Plane.Normal = normalize(value);
+	m_Bounds.Position = m_Plane.Normal * m_Plane.Distance;
+	m_Bounds.Orientation = lookAt(vec3(0), m_Plane.Normal, { 0, 1, 0 });
+	m_Bounds.Extents = m_Plane.Normal * Extents;
+}
 
-bool PlaneCollider::CheckCollision(const Collider* other) const { return other->CheckCollision(this); }
+bool PlaneCollider::LineTest(Line& line) { return m_Plane.LineTest(line); }
+bool PlaneCollider::Raycast(Ray& ray, RaycastHit* outResult) { return m_Plane.Raycast(ray, outResult); }
+bool PlaneCollider::IsPointInside(glm::vec3& point) const { return m_Plane.CheckPoint(point) == PlaneIntersection::Intersecting; }
 
-bool PlaneCollider::CheckCollision(const BoxCollider* other) const
+bool PlaneCollider::CheckCollision(Collider* other) { return other->CheckCollision(this); }
+
+bool PlaneCollider::CheckCollision(BoxCollider* other)
 {
 	return TestBoxPlaneCollider(
 		other->GetOBB(),
-		BuildPlane()
+		m_Plane
 	);
 }
 
-bool PlaneCollider::CheckCollision(const SphereCollider* other) const
+bool PlaneCollider::CheckCollision(SphereCollider* other)
 {
 	return TestSpherePlaneCollider(
-		other->BuildSphere(),
-		BuildPlane()
+		other->GetSphere(),
+		m_Plane
 	);
 }
 
-bool PlaneCollider::CheckCollision(const PlaneCollider* other) const
+bool PlaneCollider::CheckCollision(PlaneCollider* other)
 {
 	return TestPlanePlaneCollider(
-		BuildPlane(),
-		other->BuildPlane()
+		m_Plane,
+		other->m_Plane
 	);
 }

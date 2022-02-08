@@ -150,6 +150,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -174,6 +175,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -229,6 +231,8 @@
     <ClCompile Include="Source\Graphics\Texture.cpp" />
     <ClCompile Include="Source\Input.cpp" />
     <ClCompile Include="Source\Log.cpp" />
+    <ClCompile Include="Source\Physics\Broadphase\Broadphase.cpp" />
+    <ClCompile Include="Source\Physics\Broadphase\BroadphaseOctree.cpp" />
     <ClCompile Include="Source\Physics\Octree.cpp" />
     <ClCompile Include="Source\Physics\Shapes.cpp" />
     <ClCompile Include="Source\Physics\CollisionInfo.cpp" />
@@ -269,6 +273,8 @@
     <ClInclude Include="Include\Engine\Graphics\Texture.hpp" />
     <ClInclude Include="Include\Engine\Input.hpp" />
     <ClInclude Include="Include\Engine\Log.hpp" />
+    <ClInclude Include="Include\Engine\Physics\Broadphase\Broadphase.hpp" />
+    <ClInclude Include="Include\Engine\Physics\Broadphase\BroadphaseOctree.hpp" />
     <ClInclude Include="Include\Engine\Physics\Octree.hpp" />
     <ClInclude Include="Include\Engine\Physics\Shapes.hpp" />
     <ClInclude Include="Include\Engine\Physics\CollisionInfo.hpp" />

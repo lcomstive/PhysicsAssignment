@@ -49,6 +49,12 @@
     <Filter Include="Source Files\Graphics\Pipelines">
       <UniqueIdentifier>{f64e3bd7-ff25-4377-b515-7c78f3251d94}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Physics\Broadphase">
+      <UniqueIdentifier>{bc18a8ac-3c54-4918-b931-56e648bc186e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Physics\Broadphase">
+      <UniqueIdentifier>{f826c9be-b4f3-41f8-92e8-138a7accfd97}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Graphics\Framebuffer.cpp">
@@ -165,6 +171,12 @@
     <ClCompile Include="Source\Physics\Solver.cpp">
       <Filter>Source Files\Physics</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Physics\Broadphase\Broadphase.cpp">
+      <Filter>Source Files\Physics\Broadphase</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics\Broadphase\BroadphaseOctree.cpp">
+      <Filter>Source Files\Physics\Broadphase</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\Engine\Application.hpp">
@@ -280,6 +292,12 @@
     </ClInclude>
     <ClInclude Include="Include\Engine\Physics\Solver.hpp">
       <Filter>Header Files\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Engine\Physics\Broadphase\Broadphase.hpp">
+      <Filter>Header Files\Physics\Broadphase</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Engine\Physics\Broadphase\BroadphaseOctree.hpp">
+      <Filter>Header Files\Physics\Broadphase</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

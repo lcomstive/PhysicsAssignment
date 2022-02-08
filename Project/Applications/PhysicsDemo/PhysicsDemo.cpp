@@ -7,11 +7,11 @@
 #include <Engine/Graphics/Renderer.hpp>
 #include <Engine/Components/Physics/Particle.hpp>
 #include <Engine/Components/Physics/Rigidbody.hpp>
-#include <Engine/Components/Graphics/MeshRenderer.hpp>
-
 #include <Engine/Components/Physics/BoxCollider.hpp>
+#include <Engine/Components/Graphics/MeshRenderer.hpp>
 #include <Engine/Components/Physics/PlaneCollider.hpp>
 #include <Engine/Components/Physics/SphereCollider.hpp>
+#include <Engine/Physics/Broadphase/BroadphaseOctree.hpp>
 
 #pragma warning(disable : 4244)
 
@@ -28,10 +28,6 @@ Shader* defaultShader = nullptr;
 
 void PhysicsDemo::OnStart()
 {
-	vec3 center = { 0, 0, 0 };
-	CurrentScene()->GetPhysics().Accelerate(center, 1000.0f, 10);
-	CurrentScene()->GetPhysics().SetGravity({ 0, -10, 0 });
-
 	// Default Cube Mesh //
 	MeshRenderer::MeshInfo meshInfo;
 	meshInfo.Mesh = Mesh::Cube();
@@ -47,7 +43,7 @@ void PhysicsDemo::OnStart()
 
 	meshInfo.Material.Albedo = { 1, 0, 0, 1 };
 
-	const int TowerSize = 5;
+	const int TowerSize = 2;
 	for (int x = 0; x < TowerSize; x++)
 	{
 		for (int y = 0; y < TowerSize; y++)
@@ -55,10 +51,12 @@ void PhysicsDemo::OnStart()
 			for (int z = 0; z < TowerSize; z++)
 			{
 				GameObject* go = new GameObject(CurrentScene(), "Tower " + to_string(y));
-				go->GetTransform()->Position.x = x * 5;
+				go->GetTransform()->Position.x = (x - TowerSize / 2.0f) * 5;
 				go->GetTransform()->Position.y = y * 5;
-				go->GetTransform()->Position.z = z * 5;
-				go->GetTransform()->Rotation = { Random(-90, 90), Random(-90, 90), Random(-90, 90) };
+				go->GetTransform()->Position.z = (z - TowerSize / 2.0f) * 5;
+				go->GetTransform()->Rotation = radians(vec3{ Random(-180, 180), Random(-180, 180), Random(-180, 180) });
+
+				Log::Debug("Created @ {" + to_string((x - TowerSize / 2.0f) * 5) + ", " + to_string(y * 5) + ", " + to_string((z - TowerSize / 2.0f) * 5) + "}");
 
 				Rigidbody* rb = go->AddComponent<Rigidbody>();
 				// rb->CanSleep = false;
@@ -73,7 +71,7 @@ void PhysicsDemo::OnStart()
 				else
 				{
 					meshInfo.Mesh = Mesh::Cube();
-					go->AddComponent<BoxCollider>();
+					BoxCollider* bCollider = go->AddComponent<BoxCollider>();					
 				}
 				go->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 			}
@@ -126,7 +124,6 @@ void PhysicsDemo::OnUpdate()
 	if (Input::IsKeyPressed(GLFW_KEY_SPACE))
 		CurrentScene()->GetPhysics().TogglePause();
 
-
 	Ray ray;
 	ray.Origin = Camera::GetMainCamera()->GetTransform()->Position;
 	ray.Direction = { 0, 0, -1 };
@@ -144,8 +141,8 @@ void PhysicsDemo::OnUpdate()
 void PhysicsDemo::OnDraw()
 {
 	ImGui::Text("FPS: %f\n", Renderer::GetFPS());
-	ImGui::Text("Render  Frame Time: %fms", Renderer::GetDeltaTime() * 1000.0f);
-	ImGui::Text("Physics Frame Time: %fms", (CurrentScene()->GetPhysics().LastTimeStep().count()) * 1.0f);
+	ImGui::Text("Render  Frame Time: %.1fms", Renderer::GetDeltaTime() * 1000.0f);
+	ImGui::Text("Physics Frame Time: %.1fms", (CurrentScene()->GetPhysics().LastTimeStep().count()) * 1.0f);
 	ImGui::Text("Resolution: (%d, %d)", Renderer::GetResolution().x, Renderer::GetResolution().y);
 	ImGui::Text("VSync: %s", Renderer::GetVSync() ? "Enabled" : "Disabled");
 	ImGui::Text("Samples: %d", Renderer::GetSamples());
@@ -164,7 +161,7 @@ void PhysicsDemo::OnDrawGizmos()
 }
 
 const float WallDistance = 100.0f, WallThickness = 25;
-const vec3 WallOffset = { 0, WallDistance - WallThickness - 5.0f, 0 };
+const vec3 WallOffset = { 0, WallDistance - WallThickness - 10.0f, 0 };
 void PhysicsDemo::CreateWall(vec3 axis)
 {
 	GameObject* wall = new GameObject(CurrentScene(), "Wall");

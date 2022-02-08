@@ -13,6 +13,9 @@ namespace Engine
 		{
 			GameObject* m_GameObject;
 
+			Rigidbody* m_CachedRB = nullptr;
+			Transform* m_CachedTransform = nullptr;
+
 			friend class Engine::GameObject;
 
 		protected:
@@ -32,8 +35,8 @@ namespace Engine
 			virtual void FixedUpdate(float timestep) { }
 
 		public:
-			Rigidbody* GetRigidbody() const;
-			Transform* GetTransform() const;
+			Rigidbody* GetRigidbody();
+			Transform* GetTransform();
 			GameObject* GetGameObject() const;
 		};
 	}
