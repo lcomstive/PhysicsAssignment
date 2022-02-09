@@ -1,9 +1,9 @@
 #pragma once
 #include <vector>
 #include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <Engine/Graphics/Shader.hpp>
 #include <Engine/Components/Component.hpp>
+
+namespace Engine::Graphics { class Shader; }
 
 namespace Engine::Components
 {

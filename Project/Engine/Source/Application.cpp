@@ -5,13 +5,9 @@
 #include <Engine/Graphics/Pipelines/Forward.hpp>
 
 #include <imgui.h>
+#include <glad/glad.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
-
-#if defined(NDEBUG) && defined(_WIN32)
-#define WIN32_LEAN_AND_MEAN // Remove bloat from Windows.h
-#include <Windows.h>
-#endif
 
 using namespace std;
 using namespace glm;
@@ -28,8 +24,8 @@ Application::Application(ApplicationArgs args)
 	m_Scene.GetPhysics().SetTimestep(m_Args.FixedTimestep);
 
 	m_Args.Samples = std::clamp(m_Args.Samples, 0u, 16u);
-	m_Args.Resolution.x = max(m_Args.Resolution.x, 800);
-	m_Args.Resolution.y = max(m_Args.Resolution.y, 600);
+	m_Args.Resolution.x = std::max(m_Args.Resolution.x, 800);
+	m_Args.Resolution.y = std::max(m_Args.Resolution.y, 600);
 
 	if (m_Args.Title.empty())
 		m_Args.Title = "Application";

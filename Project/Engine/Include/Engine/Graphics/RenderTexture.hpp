@@ -1,6 +1,5 @@
 #pragma once
 #include <glm/glm.hpp>
-#include <glad/glad.h>
 
 namespace Engine::Graphics
 {
@@ -24,9 +23,9 @@ namespace Engine::Graphics
 	};
 
 	bool IsDepthFormat(TextureFormat format);
-	GLenum GetTextureTarget(TextureFormat format, bool multisampled = false);
-	GLenum TextureFormatToGLFormat(TextureFormat format);
-	GLenum TextureFormatToInternalGLFormat(TextureFormat format);
+	unsigned int GetTextureTarget(TextureFormat format, bool multisampled = false);
+	unsigned int TextureFormatToGLFormat(TextureFormat format);
+	unsigned int TextureFormatToInternalGLFormat(TextureFormat format);
 
 	class RenderTexture
 	{

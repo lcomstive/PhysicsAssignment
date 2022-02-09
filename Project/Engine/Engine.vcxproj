@@ -207,6 +207,7 @@
     <ClCompile Include="Source\Components\Graphics\MeshRenderer.cpp" />
     <ClCompile Include="Source\Components\Graphics\SpriteRenderer.cpp" />
     <ClCompile Include="Source\Components\Light.cpp" />
+    <ClCompile Include="Source\Components\OrbitCameraController.cpp" />
     <ClCompile Include="Source\Components\Physics\BoxCollider.cpp" />
     <ClCompile Include="Source\Components\Physics\Collider.cpp" />
     <ClCompile Include="Source\Components\Physics\Constraints\DistanceJoint.cpp" />
@@ -250,6 +251,7 @@
     <ClInclude Include="Include\Engine\Components\Graphics\MeshRenderer.hpp" />
     <ClInclude Include="Include\Engine\Components\Graphics\SpriteRenderer.hpp" />
     <ClInclude Include="Include\Engine\Components\Light.hpp" />
+    <ClInclude Include="Include\Engine\Components\OrbitCameraController.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\BoxCollider.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\Collider.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\Constraints\DistanceJoint.hpp" />

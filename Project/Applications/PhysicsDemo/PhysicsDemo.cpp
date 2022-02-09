@@ -3,20 +3,19 @@
 #include <Engine/Utilities.hpp>
 #include <Engine/Physics/Shapes.hpp>
 #include <Engine/Graphics/Gizmos.hpp>
-#include <Engine/Components/Camera.hpp>
 #include <Engine/Graphics/Renderer.hpp>
 #include <Engine/Components/Physics/Particle.hpp>
 #include <Engine/Components/Physics/Rigidbody.hpp>
 #include <Engine/Components/Physics/BoxCollider.hpp>
 #include <Engine/Components/Graphics/MeshRenderer.hpp>
 #include <Engine/Components/Physics/PlaneCollider.hpp>
+#include <Engine/Components/OrbitCameraController.hpp>
 #include <Engine/Components/Physics/SphereCollider.hpp>
 #include <Engine/Physics/Broadphase/BroadphaseOctree.hpp>
 
 #pragma warning(disable : 4244)
 
-#define TOWER_DEMO  0
-#define SPRING_DEMO 1
+#define TOWER_DEMO			1
 #define DISTANCE_JOINT_DEMO 0
 
 using namespace std;
@@ -37,15 +36,6 @@ Material WallMaterial = {};
 Mesh* gridMesh = nullptr;
 const int GridSize = 250;
 
-#if SPRING_DEMO
-#include <Engine/Components/Physics/Constraints/Spring.hpp>
-Spring* DemoSpring = nullptr;
-
-float SpringStiffness = 10.0f;
-float SpringRestingLength = 1.0f;
-float SpringDampingFactor = 0.5f;
-#endif
-
 #if DISTANCE_JOINT_DEMO
 #include <Engine/Components/Physics/Constraints/DistanceJoint.hpp>
 
@@ -53,7 +43,7 @@ float DistanceJointLength = 3.0f;
 DistanceJoint* DemoDistanceJoint = nullptr;
 #endif
 
-#if SPRING_DEMO || DISTANCE_JOINT_DEMO
+#if DISTANCE_JOINT_DEMO
 GameObject* PointA = nullptr;
 GameObject* PointB = nullptr;
 #endif
@@ -61,6 +51,9 @@ GameObject* PointB = nullptr;
 unsigned int TotalObjects = 0;
 void PhysicsDemo::OnStart()
 {
+	// Set ImGui Font
+	ImGui::GetIO().Fonts->AddFontFromFileTTF("./Assets/Fonts/Source Sans Pro/SourceSansPro-Regular.ttf", 16.0f);
+
 	// Default Cube Mesh //
 	MeshRenderer::MeshInfo meshInfo;
 	meshInfo.Mesh = Mesh::Cube();
@@ -70,7 +63,7 @@ void PhysicsDemo::OnStart()
 
 	// Main Camera //
 	GameObject* cameraObj = new GameObject(CurrentScene(), "Main Camera");
-	cameraObj->AddComponent<Camera>();
+	cameraObj->AddComponent<OrbitCameraController>();
 	cameraObj->GetTransform()->Position = { 0, 0, 20 };
 	cameraObj->GetTransform()->Rotation = { 0, radians(-90.0f), 0 }; // From euler angles
 	TotalObjects++;
@@ -81,7 +74,7 @@ void PhysicsDemo::OnStart()
 #ifdef NDEBUG
 	const int TowerSize = 10;
 #else
-	const int TowerSize = 2;
+	const int TowerSize = 3;
 #endif
 	for (int x = 0; x < TowerSize; x++)
 	{
@@ -118,7 +111,7 @@ void PhysicsDemo::OnStart()
 	}
 #endif
 
-#if SPRING_DEMO || DISTANCE_JOINT_DEMO
+#if DISTANCE_JOINT_DEMO
 	PointA = new GameObject(CurrentScene(), "Spring Point A");
 	Particle* particleA = PointA->AddComponent<Particle>();
 	particleA->IsStatic = true;
@@ -135,16 +128,6 @@ void PhysicsDemo::OnStart()
 	PointB->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 	particleB->SetRestitution(0.0f);
 
-#endif
-
-#if SPRING_DEMO
-	DemoSpring = PointA->AddComponent<Spring>();
-	DemoSpring->SetRestingLength(SpringRestingLength);
-	DemoSpring->SetConstants(SpringStiffness, SpringDampingFactor);
-	DemoSpring->SetBodies(particleA, particleB);
-#endif
-
-#if DISTANCE_JOINT_DEMO
 	DemoDistanceJoint = PointA->AddComponent<DistanceJoint>();
 	DemoDistanceJoint->Initialise(particleA, particleB, DistanceJointLength);
 #endif
@@ -193,7 +176,7 @@ void PhysicsDemo::OnUpdate()
 	if (Input::IsKeyPressed(GLFW_KEY_SPACE))
 		CurrentScene()->GetPhysics().TogglePause();
 
-#if SPRING_DEMO || DISTANCE_JOINT_DEMO
+#if DISTANCE_JOINT_DEMO
 	float SpringMoveSpeed = 2.5f * Renderer::GetDeltaTime();
 	if (Input::IsKeyDown(GLFW_KEY_LEFT))  PointA->GetTransform()->Position.x -= SpringMoveSpeed;
 	if (Input::IsKeyDown(GLFW_KEY_RIGHT)) PointA->GetTransform()->Position.x += SpringMoveSpeed;
@@ -221,11 +204,11 @@ void PhysicsDemo::OnDraw()
 	if (ImGui::Begin("Controls", &controlsWindowOpen))
 	{
 		ImGui::Text("Space:		  Toggle pause physics");
-		ImGui::Text("Arrow Keys:  Move object A");
 		ImGui::Text("WASD:		  Move camera");
 		ImGui::Text("Q/E:		  Move camera up/down");
 		ImGui::Text("Right Mouse: Hold and move mouse to look around");
 		ImGui::Text("F:			  Applies force at blue box position");
+		ImGui::Text("F11:		  Toggle fullscreen");
 		ImGui::End();
 	}
 
@@ -263,21 +246,6 @@ void PhysicsDemo::OnDraw()
 	}
 // #endif
 
-#if SPRING_DEMO
-	static bool springWindowOpen = true;
-	if (ImGui::Begin("Spring Demo", &springWindowOpen))
-	{
-		if (ImGui::SliderFloat("Stiffness", &SpringStiffness, 0.0f, 100.0f))
-			DemoSpring->SetConstants(SpringStiffness, SpringDampingFactor);
-		if (ImGui::SliderFloat("Dampening", &SpringDampingFactor, 0.0f, 1.0f))
-			DemoSpring->SetConstants(SpringStiffness, SpringDampingFactor);
-		if (ImGui::SliderFloat("Resting Length", &SpringRestingLength, 0.1f, 100.0f))
-			DemoSpring->SetRestingLength(SpringRestingLength);
-
-		ImGui::End();
-	}
-#endif
-
 #if DISTANCE_JOINT_DEMO
 	static bool distanceJointWindowOpen = true;
 	if (ImGui::Begin("Spring Demo", &distanceJointWindowOpen))
@@ -312,7 +280,7 @@ void PhysicsDemo::CreateWall(vec3 axis)
 	WallMaterial.Albedo.a = 0.1f;
 
 	GameObject* wall = new GameObject(CurrentScene(), "Wall");
-	wall->AddComponent<MeshRenderer>()->Meshes = { MeshRenderer::MeshInfo { Mesh::Cube(), WallMaterial }};
+	// wall->AddComponent<MeshRenderer>()->Meshes = { MeshRenderer::MeshInfo { Mesh::Cube(), WallMaterial }};
 	wall->AddComponent<BoxCollider>();
 
 	Transform* transform = wall->GetTransform();

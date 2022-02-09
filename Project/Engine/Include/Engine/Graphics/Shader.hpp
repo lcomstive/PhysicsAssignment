@@ -3,7 +3,6 @@
 #include <string>
 #include <filesystem>
 #include <glm/glm.hpp>
-#include <glad/glad.h>
 #include <Engine/FileWatcher.hpp>
 
 namespace Engine::Graphics
@@ -20,7 +19,7 @@ namespace Engine::Graphics
 	{		
 		int Location = -1;
 		std::string Name;
-		GLenum Type;
+		unsigned int Type;
 	};
 
 	class Shader
@@ -35,7 +34,7 @@ namespace Engine::Graphics
 		void CreateShaders();
 		void CacheUniformLocations();
 		void WatchShader(std::string path, bool watch = true);
-		GLuint CreateShader(const std::string & source, const GLenum type);
+		unsigned int CreateShader(const std::string & source, const unsigned int type);
 		void ShaderSourceChangedCallback(std::string path, FileWatchStatus changeType);
 
 	public:

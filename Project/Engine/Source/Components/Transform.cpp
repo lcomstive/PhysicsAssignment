@@ -1,4 +1,5 @@
 #include <glm/gtx/quaternion.hpp>
+#include <Engine/Graphics/Shader.hpp>
 #include <Engine/Components/Transform.hpp>
 
 using namespace glm;

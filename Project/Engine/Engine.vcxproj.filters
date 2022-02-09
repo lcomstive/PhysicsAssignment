@@ -186,6 +186,9 @@
     <ClCompile Include="Source\Components\Physics\Constraints\DistanceJoint.cpp">
       <Filter>Source Files\Components\Physics\Constraints</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Components\OrbitCameraController.cpp">
+      <Filter>Source Files\Components</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\Engine\Application.hpp">
@@ -310,6 +313,9 @@
     </ClInclude>
     <ClInclude Include="Include\Engine\Components\Physics\Constraints\DistanceJoint.hpp">
       <Filter>Header Files\Components\Physics\Constraints</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Engine\Components\OrbitCameraController.hpp">
+      <Filter>Header Files\Components</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

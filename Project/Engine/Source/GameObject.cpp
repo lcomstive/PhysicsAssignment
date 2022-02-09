@@ -8,7 +8,7 @@ using namespace Engine::Components;
 GameObject::GameObject(Scene* scene, string name) : m_Scene(scene), m_Name(name)
 {
 	m_Transform = AddComponent<Transform>();
-	m_Transform->SetParent(m_Scene->Root()->GetTransform());
+	m_Transform->SetParent(m_Scene->Root().GetTransform());
 }
 
 GameObject::GameObject(Transform* parent, string name) : GameObject(parent->GetGameObject(), name) { }

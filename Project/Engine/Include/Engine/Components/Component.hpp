@@ -2,7 +2,6 @@
 
 namespace Engine
 {
-	// Forward declaration
 	class GameObject;
 	namespace Physics { class PhysicsSystem; }
 

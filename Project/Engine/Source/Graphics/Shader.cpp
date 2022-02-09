@@ -36,7 +36,7 @@ void ProcessIncludeFiles(string& text)
 }
 
 // Create a shader from source code
-GLuint Shader::CreateShader(const string& source, const GLenum type)
+unsigned int Shader::CreateShader(const string& source, const unsigned int type)
 {
 	if (source.empty())
 		return GL_INVALID_VALUE;

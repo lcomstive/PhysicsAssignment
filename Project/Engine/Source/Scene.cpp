@@ -7,7 +7,7 @@ using namespace Engine::Physics;
 
 Scene::Scene(Application* app, string name) : m_Name(name), m_Root(this, "Root"), m_Physics(app) { }
 
-GameObject* Scene::Root() { return &m_Root; }
+GameObject& Scene::Root() { return m_Root; }
 PhysicsSystem& Scene::GetPhysics() { return m_Physics; }
 
 void Scene::Draw() { m_Root.Draw(); }

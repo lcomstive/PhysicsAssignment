@@ -16,7 +16,7 @@ namespace Engine
 	public:
 		Scene(Application* app, std::string name = "Scene");
 
-		GameObject* Root();
+		GameObject& Root();
 		Physics::PhysicsSystem& GetPhysics();
 
 		void Draw();

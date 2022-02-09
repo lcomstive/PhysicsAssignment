@@ -1,4 +1,4 @@
-#include "PhysicsDemo.hpp"
+#include "SpringDemo.hpp"
 
 using namespace std::chrono_literals; // seconds in literal
 
@@ -6,7 +6,7 @@ Engine::ApplicationArgs applicationArgs =
 {
 	false,			// VSync
 	4,				// Samples
-	"Physics Demo",	// Title
+	"Spring Demo",	// Title
 	{ 1280, 720 },	// Resolution
 	20ms			// Physics Timestep
 };
@@ -17,7 +17,8 @@ int __stdcall WinMain(void*, void*, char*, int)
 int main()
 #endif
 {
-	PhysicsDemo demo(applicationArgs);
+	SpringDemo demo(applicationArgs);
 	demo.Run();
+
 	return 0;
 }

@@ -108,7 +108,7 @@ void DeferredRenderPipeline::LightingPass()
 	shader->Set("inputDepth", 4);
 
 	// FILL LIGHT DATA //
-	auto lights = Renderer::GetApp()->CurrentScene()->Root()->GetComponentsInChildren<Light>();
+	auto lights = Renderer::GetApp()->CurrentScene()->Root().GetComponentsInChildren<Light>();
 
 	unsigned int lightIndex = 0;
 	unsigned int lightCount = std::min((unsigned int)lights.size(), MaxLights);
