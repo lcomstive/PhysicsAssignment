@@ -49,6 +49,8 @@ namespace Engine::Graphics
 
 		static Mesh* Quad();
 		static Mesh* Cube();
+		static Mesh* Line();
+		static Mesh* Grid(unsigned int size);
 		static Mesh* Sphere();
 	};
 }

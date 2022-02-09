@@ -3,12 +3,11 @@
 #include <Engine/Components/Component.hpp>
 #include <Engine/Physics/PhysicsSystem.hpp>
 #include <Engine/Physics/CollisionInfo.hpp>
+#include <Engine/Components/Physics/Particle.hpp>
 
 namespace Engine::Components
 {
-	enum class ForceMode { Impulse, Acceleration };
-
-	struct Rigidbody : public Component
+	struct Rigidbody : public PhysicsComponent
 	{
 		bool CanSleep = true;
 		bool UseGravity = true;
@@ -35,6 +34,8 @@ namespace Engine::Components
 
 		float InverseMass();
 		float PotentialEnergy();
+
+		glm::vec3 GetVelocity();
 
 	private:
 		bool m_IsStatic = false;
@@ -80,15 +81,12 @@ namespace Engine::Components
 		/// </summary>
 		bool m_Sleeping = false;
 
-		void Added() override;
-		void Removed() override;
-
 		glm::mat4& InverseTensor();
 
+		void FixedUpdate(float timestep) override;
+		void ApplyWorldForces(float timestep) override;
+
 		void CheckSleeping();
-		void ApplyWorldForces();
-		void PreFixedUpdate(float timestep);
-		void SolveConstraints(float timestep);
 		void ApplyImpulse(Collider* other, Physics::CollisionManifold manifold, int contactIndex);
 		void ApplyImpulse(Rigidbody* other, Physics::CollisionManifold manifold, int contactIndex);
 

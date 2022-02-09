@@ -15,6 +15,10 @@
 
 #pragma warning(disable : 4244)
 
+#define TOWER_DEMO  0
+#define SPRING_DEMO 1
+#define DISTANCE_JOINT_DEMO 0
+
 using namespace std;
 using namespace glm;
 using namespace Engine;
@@ -24,12 +28,39 @@ using namespace Engine::Components;
 
 PhysicsDemo::PhysicsDemo(ApplicationArgs args) : Application(args) { }
 
-Shader* defaultShader = nullptr;
+// Walls
+const float WallDistance = 100.0f, WallThickness = 5;
+const vec3 WallOffset = { 0, WallDistance - WallThickness - 10.0f, 0 };
+Material WallMaterial = {};
 
+// Grid
+Mesh* gridMesh = nullptr;
+const int GridSize = 250;
+
+#if SPRING_DEMO
+#include <Engine/Components/Physics/Constraints/Spring.hpp>
+Spring* DemoSpring = nullptr;
+
+float SpringStiffness = 10.0f;
+float SpringRestingLength = 1.0f;
+float SpringDampingFactor = 0.5f;
+#endif
+
+#if DISTANCE_JOINT_DEMO
+#include <Engine/Components/Physics/Constraints/DistanceJoint.hpp>
+
+float DistanceJointLength = 3.0f;
+DistanceJoint* DemoDistanceJoint = nullptr;
+#endif
+
+#if SPRING_DEMO || DISTANCE_JOINT_DEMO
+GameObject* PointA = nullptr;
+GameObject* PointB = nullptr;
+#endif
+
+unsigned int TotalObjects = 0;
 void PhysicsDemo::OnStart()
 {
-	// CurrentScene()->GetPhysics().SetBroadphase<BroadphaseOctree>(3 /* depth */, 100.0f /* size */);
-
 	// Default Cube Mesh //
 	MeshRenderer::MeshInfo meshInfo;
 	meshInfo.Mesh = Mesh::Cube();
@@ -42,10 +73,16 @@ void PhysicsDemo::OnStart()
 	cameraObj->AddComponent<Camera>();
 	cameraObj->GetTransform()->Position = { 0, 0, 20 };
 	cameraObj->GetTransform()->Rotation = { 0, radians(-90.0f), 0 }; // From euler angles
+	TotalObjects++;
 
 	meshInfo.Material.Albedo = { 1, 0, 0, 1 };
 
-	const int TowerSize = 3;
+#if TOWER_DEMO
+#ifdef NDEBUG
+	const int TowerSize = 10;
+#else
+	const int TowerSize = 2;
+#endif
 	for (int x = 0; x < TowerSize; x++)
 	{
 		for (int y = 0; y < TowerSize; y++)
@@ -59,8 +96,7 @@ void PhysicsDemo::OnStart()
 				go->GetTransform()->Rotation = radians(vec3{ Random(-180, 180), Random(-180, 180), Random(-180, 180) });
 
 				Rigidbody* rb = go->AddComponent<Rigidbody>();
-				// rb->CanSleep = false;
-				rb->SetRestitution(0.5f);
+				rb->SetRestitution(0.9f);
 
 				bool sphere = rand() % 2 == 0;
 				if (sphere)
@@ -73,18 +109,50 @@ void PhysicsDemo::OnStart()
 					meshInfo.Mesh = Mesh::Cube();
 					BoxCollider* bCollider = go->AddComponent<BoxCollider>();					
 				}
+
 				go->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+
+				TotalObjects++;
 			}
 		}
 	}
+#endif
+
+#if SPRING_DEMO || DISTANCE_JOINT_DEMO
+	PointA = new GameObject(CurrentScene(), "Spring Point A");
+	Particle* particleA = PointA->AddComponent<Particle>();
+	particleA->IsStatic = true;
+	particleA->SetRestitution(0.0f);
+	
+	PointA->GetTransform()->Position = { 0, 2, 0 };
+	PointA->GetTransform()->Scale = vec3(0.2f);
+	PointA->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+
+	PointB = new GameObject(CurrentScene(), "Spring Point B");
+	Particle* particleB = PointB->AddComponent<Particle>();
+	PointB->GetTransform()->Position = { 1, 0.5f, 0 };
+	PointB->GetTransform()->Scale = vec3(0.2f);
+	PointB->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+	particleB->SetRestitution(0.0f);
+
+#endif
+
+#if SPRING_DEMO
+	DemoSpring = PointA->AddComponent<Spring>();
+	DemoSpring->SetRestingLength(SpringRestingLength);
+	DemoSpring->SetConstants(SpringStiffness, SpringDampingFactor);
+	DemoSpring->SetBodies(particleA, particleB);
+#endif
+
+#if DISTANCE_JOINT_DEMO
+	DemoDistanceJoint = PointA->AddComponent<DistanceJoint>();
+	DemoDistanceJoint->Initialise(particleA, particleB, DistanceJointLength);
+#endif
 }
 
 void PhysicsDemo::OnShutdown()
 {
-	// Test removing components
-	CurrentScene()->Root()->GetTransform()->GetChildren()[0]->GetGameObject()->RemoveComponent<MeshRenderer>();
-
-	delete defaultShader;
+	delete gridMesh;
 }
 
 RaycastHit Hit = {};
@@ -97,14 +165,15 @@ void PhysicsDemo::OnUpdate()
 	Transform* transform = camera->GetTransform();
 
 	float speed = CameraSpeed * (Input::IsKeyDown(GLFW_KEY_LEFT_SHIFT) ? 2.0f : 1.0f);
+	speed *= Renderer::GetDeltaTime();
 
-	if (Input::IsKeyDown(GLFW_KEY_A)) transform->Position.x -= speed * Renderer::GetDeltaTime();
-	if (Input::IsKeyDown(GLFW_KEY_D)) transform->Position.x += speed * Renderer::GetDeltaTime();
-	if (Input::IsKeyDown(GLFW_KEY_W)) transform->Position.z -= speed * Renderer::GetDeltaTime();
-	if (Input::IsKeyDown(GLFW_KEY_S)) transform->Position.z += speed * Renderer::GetDeltaTime();
+	if (Input::IsKeyDown(GLFW_KEY_A)) transform->Position.x -= speed;
+	if (Input::IsKeyDown(GLFW_KEY_D)) transform->Position.x += speed;
+	if (Input::IsKeyDown(GLFW_KEY_W)) transform->Position.z -= speed;
+	if (Input::IsKeyDown(GLFW_KEY_S)) transform->Position.z += speed;
 
-	if (Input::IsKeyDown(GLFW_KEY_Q)) transform->Position.y -= speed * Renderer::GetDeltaTime();
-	if (Input::IsKeyDown(GLFW_KEY_E)) transform->Position.y += speed * Renderer::GetDeltaTime();
+	if (Input::IsKeyDown(GLFW_KEY_Q)) transform->Position.y -= speed;
+	if (Input::IsKeyDown(GLFW_KEY_E)) transform->Position.y += speed;
 
 	camera->FieldOfView = std::clamp(camera->FieldOfView - Input::GetScrollDelta(), 10.0f, 120.0f);
 
@@ -124,6 +193,14 @@ void PhysicsDemo::OnUpdate()
 	if (Input::IsKeyPressed(GLFW_KEY_SPACE))
 		CurrentScene()->GetPhysics().TogglePause();
 
+#if SPRING_DEMO || DISTANCE_JOINT_DEMO
+	float SpringMoveSpeed = 2.5f * Renderer::GetDeltaTime();
+	if (Input::IsKeyDown(GLFW_KEY_LEFT))  PointA->GetTransform()->Position.x -= SpringMoveSpeed;
+	if (Input::IsKeyDown(GLFW_KEY_RIGHT)) PointA->GetTransform()->Position.x += SpringMoveSpeed;
+	if (Input::IsKeyDown(GLFW_KEY_UP))    PointA->GetTransform()->Position.y += SpringMoveSpeed;
+	if (Input::IsKeyDown(GLFW_KEY_DOWN))  PointA->GetTransform()->Position.y -= SpringMoveSpeed;
+#endif
+
 	Ray ray;
 	ray.Origin = Camera::GetMainCamera()->GetTransform()->Position;
 	ray.Direction = { 0, 0, -1 };
@@ -140,48 +217,118 @@ void PhysicsDemo::OnUpdate()
 
 void PhysicsDemo::OnDraw()
 {
-	ImGui::Text("FPS: %f\n", Renderer::GetFPS());
-	ImGui::Text("Render  Frame Time: %.1fms", Renderer::GetDeltaTime() * 1000.0f);
-	ImGui::Text("Physics Frame Time: %.1fms", (CurrentScene()->GetPhysics().LastTimeStep().count()) * 1.0f);
-	ImGui::Text("Resolution: (%d, %d)", Renderer::GetResolution().x, Renderer::GetResolution().y);
-	ImGui::Text("VSync: %s", Renderer::GetVSync() ? "Enabled" : "Disabled");
-	ImGui::Text("Samples: %d", Renderer::GetSamples());
+	static bool controlsWindowOpen = true;
+	if (ImGui::Begin("Controls", &controlsWindowOpen))
+	{
+		ImGui::Text("Space:		  Toggle pause physics");
+		ImGui::Text("Arrow Keys:  Move object A");
+		ImGui::Text("WASD:		  Move camera");
+		ImGui::Text("Q/E:		  Move camera up/down");
+		ImGui::Text("Right Mouse: Hold and move mouse to look around");
+		ImGui::Text("F:			  Applies force at blue box position");
+		ImGui::End();
+	}
 
-	if (CurrentScene()->GetPhysics().GetState() == PhysicsPlayState::Paused)
-		ImGui::Text("PHYSICS PAUSED");
+// #ifndef NDEBUG
+	const ImVec4 ColourGood = { 1, 1, 1, 1 };
+	const ImVec4 ColourBad = { 1, 0, 0, 1 };
+
+	static bool debugWindowOpen = true;
+	PhysicsSystem& physicsSystem = CurrentScene()->GetPhysics();
+	if (ImGui::Begin("Debugging", &debugWindowOpen))
+	{
+		float frameTime = Renderer::GetDeltaTime() * 1000.0f;
+		float lastTimeStep = physicsSystem.LastTimeStep().count();
+		float desiredTimestep = physicsSystem.Timestep().count();
+
+		ImGui::Text("FPS: %f\n", Renderer::GetFPS());
+		ImGui::Text("Total Objects: %i", TotalObjects);
+		ImGui::TextColored(
+			(frameTime < (1000.0f / 60.0f)) ? ColourGood : ColourBad,
+			"Render  Frame Time: %.1fms",
+			frameTime);
+		ImGui::TextColored(
+			(lastTimeStep < desiredTimestep) ? ColourGood : ColourBad,
+			"Physics Frame Time: %.1fms / %.1fms",
+			lastTimeStep, desiredTimestep
+		);
+		ImGui::Text("Resolution: (%d, %d)", Renderer::GetResolution().x, Renderer::GetResolution().y);
+		ImGui::Text("VSync: %s", Renderer::GetVSync() ? "Enabled" : "Disabled");
+		ImGui::Text("Samples: %d", Renderer::GetSamples());
+
+		if (CurrentScene()->GetPhysics().GetState() == PhysicsPlayState::Paused)
+			ImGui::Text("PHYSICS PAUSED");
+
+		ImGui::End();
+	}
+// #endif
+
+#if SPRING_DEMO
+	static bool springWindowOpen = true;
+	if (ImGui::Begin("Spring Demo", &springWindowOpen))
+	{
+		if (ImGui::SliderFloat("Stiffness", &SpringStiffness, 0.0f, 100.0f))
+			DemoSpring->SetConstants(SpringStiffness, SpringDampingFactor);
+		if (ImGui::SliderFloat("Dampening", &SpringDampingFactor, 0.0f, 1.0f))
+			DemoSpring->SetConstants(SpringStiffness, SpringDampingFactor);
+		if (ImGui::SliderFloat("Resting Length", &SpringRestingLength, 0.1f, 100.0f))
+			DemoSpring->SetRestingLength(SpringRestingLength);
+
+		ImGui::End();
+	}
+#endif
+
+#if DISTANCE_JOINT_DEMO
+	static bool distanceJointWindowOpen = true;
+	if (ImGui::Begin("Spring Demo", &distanceJointWindowOpen))
+	{
+		if (ImGui::SliderFloat("Distance", &DistanceJointLength, 0.0f, 100.0f))
+			DemoDistanceJoint->SetLength(DistanceJointLength);
+
+		ImGui::End();
+	}
+#endif
 }
 
 void PhysicsDemo::OnDrawGizmos()
 {
+	/*
+	if (!gridMesh)
+		gridMesh = Mesh::Grid(GridSize);
+
+	Gizmos::Colour = { 1, 1, 1, 0.2f };
+	Gizmos::Draw(gridMesh, vec3(-GridSize, -WallOffset.y / 2.0f, -GridSize), vec3(GridSize * 2.0f));
+	*/
+
 	if (Hit.Distance > 0)
 	{
 		Gizmos::Colour = { 0, 1, 1, 1 };
-		Gizmos::DrawCube(Hit.Point, { 0.1f, 0.1f, 0.1f });
+		Gizmos::DrawCube(Hit.Point, vec3(0.025f));
 	}
 }
 
-const float WallDistance = 100.0f, WallThickness = 25;
-const vec3 WallOffset = { 0, WallDistance - WallThickness - 10.0f, 0 };
 void PhysicsDemo::CreateWall(vec3 axis)
 {
+	WallMaterial.Albedo.a = 0.1f;
+
 	GameObject* wall = new GameObject(CurrentScene(), "Wall");
-	// wall->AddComponent<MeshRenderer>()->Meshes = { MeshRenderer::MeshInfo { Mesh::Cube(), Material {}}};
+	wall->AddComponent<MeshRenderer>()->Meshes = { MeshRenderer::MeshInfo { Mesh::Cube(), WallMaterial }};
 	wall->AddComponent<BoxCollider>();
 
 	Transform* transform = wall->GetTransform();
 	transform->Scale = vec3(WallDistance) - abs(axis) * vec3(WallDistance - WallThickness);
 	transform->Rotation = axis * radians(90.0f); // Rotate 90 degrees on axis
 	transform->Position = -axis * WallDistance + WallOffset;
+
+	TotalObjects++;
 }
 
 void PhysicsDemo::CreateWalls()
 {
 	CreateWall(vec3 {  0,  1,  0 });
-	/*
 	CreateWall(vec3 {  0, -1,  0 });
 	CreateWall(vec3 {  1,  0,  0 });
 	CreateWall(vec3 { -1,  0,  0 });
 	CreateWall(vec3 {  0,  0,  1 });
 	CreateWall(vec3 {  0,  0, -1 });
-	*/
 }

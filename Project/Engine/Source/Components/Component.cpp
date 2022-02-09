@@ -1,3 +1,4 @@
+#include <Engine/Scene.hpp>
 #include <Engine/GameObject.hpp>
 #include <Engine/Components/Component.hpp>
 #include <Engine/Components/Physics/Rigidbody.hpp>
@@ -22,3 +23,8 @@ Rigidbody* Component::GetRigidbody()
 	else
 		return (m_CachedRB = m_GameObject->GetComponent<Rigidbody>());
 }
+
+#pragma region Physics Component
+void PhysicsComponent::Added()  { GetGameObject()->GetScene()->GetPhysics().AddPhysicsComponent(this); }
+void PhysicsComponent::Removed() { GetGameObject()->GetScene()->GetPhysics().RemovePhysicsComponent(this); }
+#pragma endregion

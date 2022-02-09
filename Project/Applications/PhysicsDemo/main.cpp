@@ -11,7 +11,11 @@ Engine::ApplicationArgs applicationArgs =
 	20ms			// Physics Timestep
 };
 
+#ifndef _WIN32
 int main()
+#else
+int __stdcall WinMain(void*, void*, char*, int)
+#endif
 {
 	PhysicsDemo demo(applicationArgs);
 	demo.Run();

@@ -55,6 +55,12 @@
     <Filter Include="Source Files\Physics\Broadphase">
       <UniqueIdentifier>{f826c9be-b4f3-41f8-92e8-138a7accfd97}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Components\Physics\Constraints">
+      <UniqueIdentifier>{07ddc92e-ef0a-46ba-b681-00bc2f26c14a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Components\Physics\Constraints">
+      <UniqueIdentifier>{ca9eb388-6ba1-46db-b97b-a51212ffeef0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Graphics\Framebuffer.cpp">
@@ -174,6 +180,12 @@
     <ClCompile Include="Source\Physics\Broadphase\BroadphaseOctree.cpp">
       <Filter>Source Files\Physics\Broadphase</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Components\Physics\Constraints\Spring.cpp">
+      <Filter>Source Files\Components\Physics\Constraints</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Components\Physics\Constraints\DistanceJoint.cpp">
+      <Filter>Source Files\Components\Physics\Constraints</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\Engine\Application.hpp">
@@ -292,6 +304,12 @@
     </ClInclude>
     <ClInclude Include="Include\Engine\Physics\Broadphase\BroadphaseOctree.hpp">
       <Filter>Header Files\Physics\Broadphase</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Engine\Components\Physics\Constraints\Spring.hpp">
+      <Filter>Header Files\Components\Physics\Constraints</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Engine\Components\Physics\Constraints\DistanceJoint.hpp">
+      <Filter>Header Files\Components\Physics\Constraints</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

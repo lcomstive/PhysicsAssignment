@@ -62,12 +62,3 @@ void GameObject::Update(float deltaTime)
 	for (Transform* child : m_Transform->GetChildren())
 		child->GetGameObject()->Update(deltaTime);
 }
-
-void GameObject::FixedUpdate(float timestep)
-{
-	for (auto& pair : m_Components)
-		pair.second->FixedUpdate(timestep);
-
-	for (Transform* child : m_Transform->GetChildren())
-		child->GetGameObject()->FixedUpdate(timestep);
-}

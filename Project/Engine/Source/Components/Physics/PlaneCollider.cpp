@@ -1,3 +1,4 @@
+#include <Engine/Utilities.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/perpendicular.hpp>
 #include <Engine/Physics/Shapes.hpp>
@@ -8,6 +9,7 @@
 #include <Engine/Components/Physics/PlaneCollider.hpp>
 #include <Engine/Components/Physics/SphereCollider.hpp>
 
+using namespace std;
 using namespace glm;
 using namespace Engine::Physics;
 using namespace Engine::Graphics;
@@ -28,7 +30,7 @@ void PlaneCollider::DrawGizmos()
 	Gizmos::DrawWireQuad(
 		m_Plane.Normal * m_Plane.Distance,
 		{ 100.0f, 100.0f },
-		eulerAngles(quatLookAt(m_Plane.Normal, { 0, 1, 0 }))
+		RotationFromDirection(m_Plane.Normal)
 	);
 #endif
 }
@@ -46,10 +48,9 @@ void PlaneCollider::SetDistance(float value)
 glm::vec3& PlaneCollider::GetNormal() { return m_Plane.Normal; }
 void PlaneCollider::SetNormal(glm::vec3 value)
 {
-	m_Plane.Normal = normalize(value);
 	m_Bounds.Position = m_Plane.Normal * m_Plane.Distance;
-	m_Bounds.Orientation = lookAt(vec3(0), m_Plane.Normal, { 0, 1, 0 });
 	m_Bounds.Extents = m_Plane.Normal * Extents;
+	m_Bounds.Orientation = lookAt(vec3(0), m_Plane.Normal, { 0, 1, 0 });
 }
 
 bool PlaneCollider::LineTest(Line& line) { return m_Plane.LineTest(line); }

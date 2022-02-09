@@ -112,19 +112,19 @@ void PhysicsSystem::RemoveCollider(Collider* collider)
 		m_Broadphase->Remove(collider);
 }
 
-void PhysicsSystem::AddRigidbody(Rigidbody* rb)
+void PhysicsSystem::AddPhysicsComponent(PhysicsComponent* rb)
 {
-	lock_guard guard(m_CollidersMutex);
-	m_Rigidbodies.emplace_back(rb);
+	lock_guard guard(m_VariableMutex);
+	m_Components.emplace_back(rb);
 }
 
-void PhysicsSystem::RemoveRigidbody(Rigidbody* rb)
+void PhysicsSystem::RemovePhysicsComponent(PhysicsComponent* rb)
 {
-	const auto& it = find(m_Rigidbodies.begin(), m_Rigidbodies.end(), rb);
-	if (it != m_Rigidbodies.end())
+	const auto& it = find(m_Components.begin(), m_Components.end(), rb);
+	if (it != m_Components.end())
 	{
-		lock_guard guard(m_CollidersMutex);
-		m_Rigidbodies.erase(it);
+		lock_guard guard(m_VariableMutex);
+		m_Components.erase(it);
 	}
 }
 
@@ -142,19 +142,14 @@ void PhysicsSystem::PhysicsLoop()
 		Log::Assert(m_Broadphase, "A broadphase is required! Use PhysicsSystem::SetBroadphase to set one");
 
 		time_point timeStart = high_resolution_clock::now();
+		float fixedTimestep = m_FixedTimestep.count() / 1000.0f;
 
 		// Check for collisions
 		vector<CollisionFrame>& collisions = m_Broadphase->GetPotentialCollisions();
-
 		NarrowPhase(collisions); // Test potential collisions & generate manifolds
 
-		// Apply additional external forces (like gravity)
-		for (Collider* collider : m_Colliders)
-		{
-			Rigidbody* rb = collider->GetRigidbody();
-			if (rb)
-				rb->ApplyWorldForces();
-		}
+		for (PhysicsComponent* component : m_Components)
+			component->ApplyWorldForces(fixedTimestep);
 
 		// Apply linear impulse resolution
 		for (int k = 0; k < m_ImpulseIteration; k++)
@@ -172,20 +167,18 @@ void PhysicsSystem::PhysicsLoop()
 			}
 		}
 
-		float fixedTimestep = m_FixedTimestep.count() / 1000.0f;
-		for(Rigidbody* rb : m_Rigidbodies)
-			rb->PreFixedUpdate(fixedTimestep);
-		m_App->FixedStep(fixedTimestep); // milliseconds -> seconds
-
 		PositionalCorrect(collisions);
 
+		for (PhysicsComponent* component : m_Components)
+			component->FixedUpdate(fixedTimestep);
+
+		// Apply forces
+		for (PhysicsComponent* component : m_Components)
+			component->ApplyForces(fixedTimestep);
+
 		// Solve constraints
-		for (Collider* collider : m_Colliders)
-		{
-			Rigidbody* rb = collider->GetRigidbody();
-			if (rb)
-				rb->SolveConstraints(fixedTimestep);
-		}
+		for (PhysicsComponent* component : m_Components)
+			component->SolveConstraints(fixedTimestep);
 
 		m_LastTimeStep = duration_cast<milliseconds>(high_resolution_clock::now() - timeStart);
 		milliseconds remainingTime = m_FixedTimestep - m_LastTimeStep;

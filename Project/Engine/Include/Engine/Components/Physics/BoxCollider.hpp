@@ -33,7 +33,7 @@ namespace Engine::Components
 		glm::mat4 m_InverseTensor;
 		glm::vec3 m_PreviousScale;
 		glm::vec3 m_Extents = { 1, 1, 1 };
-
+		
 		void CalculateInverseTensor();
 
 		void Added() override;

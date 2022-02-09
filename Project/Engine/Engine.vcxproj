@@ -209,6 +209,8 @@
     <ClCompile Include="Source\Components\Light.cpp" />
     <ClCompile Include="Source\Components\Physics\BoxCollider.cpp" />
     <ClCompile Include="Source\Components\Physics\Collider.cpp" />
+    <ClCompile Include="Source\Components\Physics\Constraints\DistanceJoint.cpp" />
+    <ClCompile Include="Source\Components\Physics\Constraints\Spring.cpp" />
     <ClCompile Include="Source\Components\Physics\Particle.cpp" />
     <ClCompile Include="Source\Components\Physics\PlaneCollider.cpp" />
     <ClCompile Include="Source\Components\Physics\Rigidbody.cpp" />
@@ -250,6 +252,8 @@
     <ClInclude Include="Include\Engine\Components\Light.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\BoxCollider.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\Collider.hpp" />
+    <ClInclude Include="Include\Engine\Components\Physics\Constraints\DistanceJoint.hpp" />
+    <ClInclude Include="Include\Engine\Components\Physics\Constraints\Spring.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\Particle.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\PlaneCollider.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\Rigidbody.hpp" />

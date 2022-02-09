@@ -1,3 +1,4 @@
+#include <Engine/Utilities.hpp>
 #include <Engine/Graphics/Mesh.hpp>
 #include <Engine/Graphics/Gizmos.hpp>
 #include <Engine/Graphics/Renderer.hpp>
@@ -11,8 +12,21 @@ using namespace Engine::Graphics;
 using namespace Engine::Components;
 
 vec4 Gizmos::Colour = { 1, 1, 1, 1 };
-Shader* Gizmos::s_Shader = nullptr;
 Material Gizmos::s_Material = {};
+
+void Gizmos::Draw(Mesh* mesh, glm::vec3 position, glm::vec3 scale, glm::vec3 rotation)
+{
+	s_Material.Albedo = Colour;
+	s_Material.Wireframe = false;
+	Renderer::Submit(DrawCall
+		{
+			mesh,
+			s_Material,
+			position,
+			scale,
+			rotation,
+		});
+}
 
 void Gizmos::DrawQuad(vec3 position, vec2 scale, vec3 rotation)
 {
@@ -58,26 +72,32 @@ void Gizmos::DrawWireSphere(vec3 position, float radius)
 
 void Gizmos::DrawLine(vec3 start, vec3 end)
 {
-	static Mesh* LineMesh = nullptr;
-
-	if (!LineMesh)
-	{
-		LineMesh = new Mesh({
-			Mesh::Vertex { { 0, 0, 0 } },
-			Mesh::Vertex { { 0, 0, 1 } },
-			},
-			{ 0, 1 },
-			Mesh::DrawMode::Lines
-		);
-	}
-
-	//// NOTE: DOESN'T WORK RELIABLY
-
-	vec3 rotation = eulerAngles(quat(lookAt(start, end, { 0, 1, 0 })));
-
 	s_Material.Albedo = Colour;
-	s_Material.Wireframe = true;
-	Renderer::Submit(DrawCall{ LineMesh, s_Material, start, { 0, 0, length(end - start) }, rotation });
+	s_Material.Wireframe = false;
+	vec3 rotation = RotationFromDirection(end - start);
+	Renderer::Submit(DrawCall
+		{
+			Mesh::Line(),
+			s_Material,
+			start,
+			{ 1, 1, 1 },
+			rotation
+		});
+}
+
+void Gizmos::DrawGrid(glm::vec3 position, unsigned int gridSize, glm::vec3 scale, glm::vec3 rotation)
+{
+	s_Material.Albedo = Colour;
+	s_Material.Wireframe = false;
+	Renderer::Submit(DrawCall
+		{
+			Mesh::Grid(gridSize),
+			s_Material,
+			position,
+			scale,
+			rotation,
+			true // Delete mesh after draw
+		});
 }
 
 void Gizmos::DrawLine(Line line) { DrawLine(line.Start, line.End); }

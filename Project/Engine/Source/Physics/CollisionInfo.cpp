@@ -106,7 +106,7 @@ bool Engine::Physics::TestPlanePlaneCollider(Plane& a, Plane& b)
 #pragma endregion
 
 #pragma region Collision Manifolds
-CollisionManifold Engine::Physics::FindCollisionFeatures(Sphere a, Sphere b)
+CollisionManifold Engine::Physics::FindCollisionFeatures(Sphere& a, Sphere& b)
 {
 	CollisionManifold result = {};
 	float r = a.Radius + b.Radius;
@@ -131,7 +131,7 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(Sphere a, Sphere b)
 	return result;
 }
 
-CollisionManifold Engine::Physics::FindCollisionFeatures(OBB a, Sphere b)
+CollisionManifold Engine::Physics::FindCollisionFeatures(OBB& a, Sphere& b)
 {
 	CollisionManifold result = {};
 	vec3 closestPoint = a.GetClosestPoint(b.Position);
@@ -165,7 +165,7 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(OBB a, Sphere b)
 	return result;
 }
 
-CollisionManifold Engine::Physics::FindCollisionFeatures(OBB a, OBB b)
+CollisionManifold Engine::Physics::FindCollisionFeatures(OBB& a, OBB& b)
 {
 	CollisionManifold result = {};
 

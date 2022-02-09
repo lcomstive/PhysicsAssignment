@@ -12,7 +12,7 @@ namespace Engine::Components
 	/// <summary>
 	/// Abstract class for colliders
 	/// </summary>
-	struct Collider : public Component
+	struct Collider : public PhysicsComponent
 	{
 		virtual Physics::OBB& GetBounds() = 0;
 		virtual bool LineTest(Physics::Line& line) = 0;

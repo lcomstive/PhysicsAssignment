@@ -10,6 +10,7 @@ namespace Engine
 
 	float Magnitude(glm::vec3 vector);
 	float MagnitudeSqr(glm::vec3 vector);
+	glm::vec3 RotationFromDirection(glm::vec3 direction);
 
 	/// <summary>
 	/// Yeeeaaahhh it's close enough

@@ -482,7 +482,7 @@ bool Sphere::Raycast(Ray& ray, RaycastHit* outResult)
 	float f = sqrt(rSqr - bSqr);
 	float t = a - f;
 
-	if (rSqr - (magnitudeSqr - a * a) < 0.0f)
+	if (a < 0 || rSqr - (magnitudeSqr - a * a) < 0.0f)
 		return false; // No collision
 	else if (magnitudeSqr < rSqr)
 		t = a + f; // Ray starts inside sphere, reverse

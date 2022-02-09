@@ -35,7 +35,7 @@ namespace Engine::Physics
 		std::chrono::milliseconds m_LastTimeStep;
 		std::chrono::milliseconds m_FixedTimestep;
 		std::vector<Components::Collider*> m_Colliders;
-		std::vector<Components::Rigidbody*> m_Rigidbodies;
+		std::vector<Components::PhysicsComponent*> m_Components;
 
 		/// <summary>
 		/// How much positional correction to apply,
@@ -58,14 +58,14 @@ namespace Engine::Physics
 		void AddCollider(Components::Collider* collider);
 		void RemoveCollider(Components::Collider* collider);
 
-		void AddRigidbody(Components::Rigidbody* collider);
-		void RemoveRigidbody(Components::Rigidbody* collider);
+		void AddPhysicsComponent(Components::PhysicsComponent* component);
+		void RemovePhysicsComponent(Components::PhysicsComponent* component);
 
 		void PositionalCorrect(std::vector<CollisionFrame>& collisions);
 		void NarrowPhase(std::vector<CollisionFrame>& potentialCollisions);
 
 		friend struct Components::Collider;
-		friend struct Components::Rigidbody;
+		friend class Components::PhysicsComponent;
 
 	protected:
 		/// <summary>

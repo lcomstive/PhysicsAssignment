@@ -2,7 +2,9 @@
 
 namespace Engine
 {
+	// Forward declaration
 	class GameObject;
+	namespace Physics { class PhysicsSystem; }
 
 	namespace Components
 	{
@@ -11,7 +13,7 @@ namespace Engine
 
 		class Component
 		{
-			GameObject* m_GameObject;
+			GameObject* m_GameObject = nullptr;
 
 			Rigidbody* m_CachedRB = nullptr;
 			Transform* m_CachedTransform = nullptr;
@@ -32,12 +34,25 @@ namespace Engine
 			virtual void Draw() { }
 			virtual void DrawGizmos() { }
 			virtual void Update(float deltaTime) { }
-			virtual void FixedUpdate(float timestep) { }
 
 		public:
 			Rigidbody* GetRigidbody();
 			Transform* GetTransform();
 			GameObject* GetGameObject() const;
+		};
+
+		class PhysicsComponent : public Component
+		{
+		protected:
+			virtual void Added() override;
+			virtual void Removed() override;
+
+			virtual void FixedUpdate(float timestep) { }
+			virtual void ApplyForces(float timestep) { }
+			virtual void ApplyWorldForces(float timestep) { }
+			virtual void SolveConstraints(float timestep) { }
+
+			friend class Engine::Physics::PhysicsSystem;
 		};
 	}
 }

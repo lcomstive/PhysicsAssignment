@@ -29,9 +29,9 @@ namespace Engine::Physics
 		std::vector<glm::vec3> Contacts = {};
 	};
 
-	CollisionManifold FindCollisionFeatures(OBB a, OBB b);
-	CollisionManifold FindCollisionFeatures(OBB a, Sphere b);
-	CollisionManifold FindCollisionFeatures(Sphere a, Sphere b);
+	CollisionManifold FindCollisionFeatures(OBB& a, OBB& b);
+	CollisionManifold FindCollisionFeatures(OBB& a, Sphere& b);
+	CollisionManifold FindCollisionFeatures(Sphere& a, Sphere& b);
 	CollisionManifold FindCollisionFeatures(Engine::Components::Collider* a, Engine::Components::Collider* b);
 #pragma endregion
 }

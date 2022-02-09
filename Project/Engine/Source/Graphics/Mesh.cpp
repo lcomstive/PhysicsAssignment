@@ -78,12 +78,10 @@ void Mesh::Draw()
 }
 
 Mesh* QuadInstance = nullptr;
+Mesh* LineInstance = nullptr;
 Mesh* CubeInstance = nullptr;
+Mesh* GridInstance = nullptr;
 Mesh* SphereInstance = nullptr;
-
-const string QuadMeshName   = "Meshes/Primitive/Quad";
-const string CubeMeshName   = "Meshes/Primitive/Cube";
-const string SphereMeshName = "Meshes/Primitive/Sphere";
 
 Mesh* Mesh::Quad()
 {
@@ -121,6 +119,70 @@ Mesh* Mesh::Quad()
 
 	QuadInstance = new Mesh(vertices, indices);
 	return QuadInstance;
+}
+
+Mesh* Mesh::Line()
+{
+	if (LineInstance)
+		return LineInstance;
+
+	vector<Vertex> vertices =
+	{
+		{
+			{  0.0f,  0.0f, 0.0f }, // Position
+			{  0.0f,  0.0f, 0.0f }, // Normals
+			{  0.0f,  0.0f }		// Texture Coordinates
+		},
+		{
+			{  1.0f,  1.0f, 0.0f }, // Position
+			{  0.0f,  0.0f, 0.0f }, // Normals
+			{  0.0f,  0.0f }		// Texture Coordinates
+		}
+	};
+	vector<unsigned int> indices = { 0, 1 };
+
+	LineInstance = new Mesh(vertices, indices, DrawMode::Lines);
+	return LineInstance;
+}
+
+Mesh* Mesh::Grid(unsigned int size)
+{
+	vector<Vertex> vertices;
+	vector<unsigned int> indices;
+
+	for (unsigned int i = 0; i <= size; i++)
+	{
+		for (unsigned int j = 0; j <= size; j++)
+		{
+			float x = ((float)i / (float)size);
+			float z = ((float)j / (float)size);
+			vertices.emplace_back(Vertex
+				{
+					{ x, 0, z }, // Positions
+					{ 0, 1, 0 }, // Normals
+					{ 0, 0 }	 // Texture Coordinates
+				});
+		}
+	}
+
+	for (unsigned int j = 0; j < size; j++)
+	{
+		for (unsigned int i = 0; i < size; i++)
+		{
+			int row1 =  j	   * (size + 1);
+			int row2 = (j + 1) * (size + 1);
+
+			indices.emplace_back(row1 + i);
+			indices.emplace_back(row1 + i + 1);
+			indices.emplace_back(row1 + i + 1);
+			indices.emplace_back(row2 + i + 1);
+			indices.emplace_back(row2 + i + 1);
+			indices.emplace_back(row2 + i);
+			indices.emplace_back(row2 + i);
+			indices.emplace_back(row1 + i);
+		}
+	}
+	return new Mesh(vertices, indices, DrawMode::Lines);
 }
 
 Mesh* Mesh::Cube()

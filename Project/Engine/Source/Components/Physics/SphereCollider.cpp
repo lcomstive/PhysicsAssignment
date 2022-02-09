@@ -31,8 +31,8 @@ void SphereCollider::DrawGizmos()
 float& SphereCollider::GetRadius() { return m_Radius; }
 void SphereCollider::SetRadius(float radius)
 {
-	m_Radius = radius;
 	m_Bounds.Extents = vec3(radius);
+	m_Sphere.Radius = m_Radius = radius;
 	CalculateInverseTensor();
 }
 
@@ -45,7 +45,6 @@ bool SphereCollider::Raycast(Ray& ray, RaycastHit* outResult) { return m_Sphere.
 void SphereCollider::FixedUpdate(float timestep)
 {
 	Transform* transform = GetTransform();
-
 	m_Sphere.Position = m_Bounds.Position = transform->GetGlobalPosition() + Offset;
 }
 
@@ -53,7 +52,7 @@ void SphereCollider::FixedUpdate(float timestep)
 void SphereCollider::CalculateInverseTensor()
 {
 	Rigidbody* rb = GetRigidbody();
-	float mass = rb->GetMass();
+	float mass = rb ? rb->GetMass() : 0.0f;
 	if (!rb || mass == 0.0f)
 	{
 		m_InverseTensor = inverse(mat4(0.0f));

@@ -33,12 +33,10 @@ float Rigidbody::GetFriction() { return m_Friction; }
 void  Rigidbody::SetFriction(float value) { m_Friction = value; }
 bool Rigidbody::IsStatic() { return m_IsStatic; }
 void Rigidbody::SetStatic(bool isStatic) { m_IsStatic = isStatic; }
+vec3 Rigidbody::GetVelocity() { return m_Velocity; }
 
 float Rigidbody::InverseMass() { return m_Mass <= 0.0f ? 0.0f : (1.0f / m_Mass); }
 float Rigidbody::PotentialEnergy() { return m_Mass * dot(GetSystem().GetGravity(), GetTransform()->Position); }
-
-void Rigidbody::Added() { GetGameObject()->GetScene()->GetPhysics().AddRigidbody(this); }
-void Rigidbody::Removed() { GetGameObject()->GetScene()->GetPhysics().RemoveRigidbody(this); }
 
 const mat4 DefaultTensor = inverse(mat4(0.0f));
 mat4& Rigidbody::InverseTensor()
@@ -68,7 +66,7 @@ void Rigidbody::AddRotationalImpulse(vec3 point, vec3 impulse)
 	m_AngularVelocity += vec3(InverseTensor() * vec4(torque, 1.0f));
 }
 
-void Rigidbody::ApplyWorldForces()
+void Rigidbody::ApplyWorldForces(float timestep)
 {
 	ApplyForce(GetSystem().GetGravity() * m_Mass);
 }
@@ -79,7 +77,7 @@ void Rigidbody::CheckSleeping()
 		MagnitudeSqr(m_AngularVelocity) < 0.005f;
 }
 
-void Rigidbody::PreFixedUpdate(float timestep)
+void Rigidbody::FixedUpdate(float timestep)
 {
 	if(m_IsStatic)
 		return;
@@ -240,5 +238,3 @@ void Rigidbody::ApplyImpulse(Collider* other, CollisionManifold manifold, int co
 	m_Velocity -= tangentImpulse * invMass1;
 	m_AngularVelocity -= vec3(i1 * vec4(cross(r1, tangentImpulse), 1.0f));
 }
-
-void Rigidbody::SolveConstraints(float timestep) { }

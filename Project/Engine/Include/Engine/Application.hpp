@@ -70,12 +70,6 @@ namespace Engine
 		virtual void OnUpdate() { }
 
 		/// <summary>
-		/// Called once during each physics step
-		/// </summary>
-		/// <param name="timestep">Time, in milliseconds</param>
-		virtual void OnFixedUpdate(double timestep) { }
-
-		/// <summary>
 		/// When the class has been initialised.
 		/// Typical usage is pre-loading assets.
 		/// </summary>
@@ -112,8 +106,7 @@ namespace Engine
 		static Application* s_Instance;
 
 		void SetupGizmos();
-		void CreateWindow();
-		void FixedStep(float timestep);
+		void CreateAppWindow();
 
 #pragma region GLFW Callbacks
 		static void GLFW_WindowCloseCallback(GLFWwindow* window);

@@ -1,3 +1,4 @@
+#include <Engine/Utilities.hpp> // For MagnitudeSqr
 #include <Engine/Components/Physics/Rigidbody.hpp>
 #include <Engine/Physics/Broadphase/Broadphase.hpp>
 
@@ -32,9 +33,14 @@ std::vector<CollisionFrame>& BasicBroadphase::GetPotentialCollisions()
 	{
 		Rigidbody* aRb = m_Colliders[i]->GetRigidbody();
 		OBB& bounds = m_Colliders[i]->GetBounds();
-		for (uint32_t j = i; j < size; j++)
+		float magnitude = MagnitudeSqr(bounds.Extents);
+		for (uint32_t j = i + 1; j < size; j++)
 		{
 			OBB& bounds2 = m_Colliders[j]->GetBounds();
+			float dist = distance(bounds.Position, bounds2.Position);
+			if (distance(bounds.Position, bounds2.Position) > magnitude)
+				continue;
+
 			Rigidbody* bRb = m_Colliders[j]->GetRigidbody();
 			if (((aRb && !aRb->IsStatic()) || (bRb && !bRb->IsStatic())) &&
 				TestBoxBoxCollider(bounds, bounds2))

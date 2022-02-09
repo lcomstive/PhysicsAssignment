@@ -22,6 +22,5 @@ namespace Engine
 		void Draw();
 		void DrawGizmos();
 		void Update(float deltaTime);
-		void FixedUpdate(float timestep);
 	};
 }

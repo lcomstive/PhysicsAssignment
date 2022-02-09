@@ -8,7 +8,16 @@ using namespace glm;
 using namespace Engine;
 using namespace Engine::Components;
 
-void Collider::Added() { GetGameObject()->GetScene()->GetPhysics().AddCollider(this); }
-void Collider::Removed() { GetGameObject()->GetScene()->GetPhysics().RemoveCollider(this); }
+void Collider::Added()
+{
+	PhysicsComponent::Added();
+	GetGameObject()->GetScene()->GetPhysics().AddCollider(this);
+}
+
+void Collider::Removed()
+{
+	PhysicsComponent::Removed();
+	GetGameObject()->GetScene()->GetPhysics().RemoveCollider(this);
+}
 
 mat4& Collider::InverseTensor() { return m_InverseTensor; }

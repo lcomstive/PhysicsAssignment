@@ -11,8 +11,7 @@ namespace Engine::Graphics
 	{
 		/// <summary>
 		/// This color is multiplied with other colors, such as the albedoMap or vertex colors.
-		/// If transparency is enabled (AlphaClipping), the alpha channel is used to adjust the opacity,
-		/// with 1 meaning fully opaque and 0 meaning fully transparent.
+		/// The alpha channel is used to adjust the opacity, with 1 meaning fully opaque and 0 meaning fully transparent.
 		/// 
 		/// Default is white.
 		/// </summary>

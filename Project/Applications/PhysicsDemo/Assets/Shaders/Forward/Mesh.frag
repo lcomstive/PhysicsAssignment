@@ -22,7 +22,7 @@ void main()
 
 	FragColour = albedoColour;
 
-	FragColour = vec4(vec3(remap(sin(time), -1, 1, -1, -0.5)) * WorldPos, 1);
+	FragColour = vec4(vec3(remap(sin(time), -1, 1, -1, -0.5)) * WorldPos, albedoColour.a);
 	
 	// Check for alpha clipping
 	if(alphaClipping && FragColour.a <= alphaClipThreshold)

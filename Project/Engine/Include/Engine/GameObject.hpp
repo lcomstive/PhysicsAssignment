@@ -25,7 +25,6 @@ namespace Engine
 		void Draw();
 		void DrawGizmos();
 		void Update(float deltaTime);
-		void FixedUpdate(float timestep);
 
 		Scene* GetScene();
 		std::string GetName();

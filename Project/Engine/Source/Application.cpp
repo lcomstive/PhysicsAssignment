@@ -8,6 +8,11 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
+#if defined(NDEBUG) && defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN // Remove bloat from Windows.h
+#include <Windows.h>
+#endif
+
 using namespace std;
 using namespace glm;
 using namespace Engine;
@@ -23,8 +28,8 @@ Application::Application(ApplicationArgs args)
 	m_Scene.GetPhysics().SetTimestep(m_Args.FixedTimestep);
 
 	m_Args.Samples = std::clamp(m_Args.Samples, 0u, 16u);
-	m_Args.Resolution.x = std::max(m_Args.Resolution.x, 800);
-	m_Args.Resolution.y = std::max(m_Args.Resolution.y, 600);
+	m_Args.Resolution.x = max(m_Args.Resolution.x, 800);
+	m_Args.Resolution.y = max(m_Args.Resolution.y, 600);
 
 	if (m_Args.Title.empty())
 		m_Args.Title = "Application";
@@ -39,7 +44,7 @@ void Application::Run()
 	Renderer::s_Samples = m_Args.Samples;
 	Renderer::s_Resolution = m_Args.Resolution;
 
-	CreateWindow();
+	CreateAppWindow();
 	OnStart();
 
 	Renderer::SetPipeline<Pipelines::ForwardRenderPipeline>();
@@ -126,7 +131,7 @@ void Application::Exit()
 		glfwSetWindowShouldClose(m_Window, GLFW_TRUE);
 }
 
-void Application::CreateWindow()
+void Application::CreateAppWindow()
 {
 	Log::Assert(glfwInit(), "Failed to initialize GLFW");
 
@@ -189,8 +194,6 @@ void Application::CreateWindow()
 	
 	Log::Debug("Engine initialised");
 }
-
-void Application::FixedStep(float timestep) { m_Scene.FixedUpdate(timestep); }
 
 Scene* Application::CurrentScene() { return &m_Scene; }
 void Application::SetTitle(std::string title) { glfwSetWindowTitle(m_Window, (m_Args.Title = title).c_str()); }

@@ -12,7 +12,6 @@ PhysicsSystem& Scene::GetPhysics() { return m_Physics; }
 
 void Scene::Draw() { m_Root.Draw(); }
 void Scene::Update(float deltaTime) { m_Root.Update(deltaTime); }
-void Scene::FixedUpdate(float timestep) { m_Root.FixedUpdate(timestep); }
 
 void Scene::DrawGizmos()
 {

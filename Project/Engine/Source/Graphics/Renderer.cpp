@@ -56,6 +56,9 @@ void Renderer::Draw(bool clearQueue)
 		Renderer::SetWireframe(s_DrawQueue[i].Material.Wireframe);
 
 		s_DrawQueue[i].Mesh->Draw();
+
+		if (s_DrawQueue[i].DeleteMeshAfterRender)
+			delete s_DrawQueue[i].Mesh;
 	}
 
 	if (clearQueue)
