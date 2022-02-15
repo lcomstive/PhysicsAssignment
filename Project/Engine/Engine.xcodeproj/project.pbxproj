@@ -48,6 +48,11 @@
 		DC0D2B6427AD3A8A0094C970 /* Include in Headers */ = {isa = PBXBuildFile; fileRef = DC0D2A0827AD2D750094C970 /* Include */; settings = {ATTRIBUTES = (Public, ); }; };
 		DC0D2B7827AD3D9A0094C970 /* Forward.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DC0D2B7627AD3D9A0094C970 /* Forward.cpp */; };
 		DC0D2B7927AD3D9A0094C970 /* Deferred.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DC0D2B7727AD3D9A0094C970 /* Deferred.cpp */; };
+		DC69AB1527B5E2140048B179 /* Broadphase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DC69AB1327B5E2140048B179 /* Broadphase.cpp */; };
+		DC69AB1627B5E2140048B179 /* BroadphaseOctree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DC69AB1427B5E2140048B179 /* BroadphaseOctree.cpp */; };
+		DCE57BD227B5DE0F000102F7 /* OrbitCameraController.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DCE57BD127B5DE0F000102F7 /* OrbitCameraController.cpp */; };
+		DCE57BD527B5DE1F000102F7 /* DistanceJoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DCE57BD327B5DE1F000102F7 /* DistanceJoint.cpp */; };
+		DCE57BD627B5DE1F000102F7 /* Spring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DCE57BD427B5DE1F000102F7 /* Spring.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -95,6 +100,11 @@
 		DC0D2B6227AD3A800094C970 /* Include */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Include; sourceTree = "<group>"; };
 		DC0D2B7627AD3D9A0094C970 /* Forward.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Forward.cpp; path = Source/Graphics/Pipelines/Forward.cpp; sourceTree = "<group>"; };
 		DC0D2B7727AD3D9A0094C970 /* Deferred.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Deferred.cpp; path = Source/Graphics/Pipelines/Deferred.cpp; sourceTree = "<group>"; };
+		DC69AB1327B5E2140048B179 /* Broadphase.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Broadphase.cpp; path = Source/Physics/Broadphase/Broadphase.cpp; sourceTree = "<group>"; };
+		DC69AB1427B5E2140048B179 /* BroadphaseOctree.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = BroadphaseOctree.cpp; path = Source/Physics/Broadphase/BroadphaseOctree.cpp; sourceTree = "<group>"; };
+		DCE57BD127B5DE0F000102F7 /* OrbitCameraController.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = OrbitCameraController.cpp; path = Source/Components/OrbitCameraController.cpp; sourceTree = "<group>"; };
+		DCE57BD327B5DE1F000102F7 /* DistanceJoint.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = DistanceJoint.cpp; path = Source/Components/Physics/Constraints/DistanceJoint.cpp; sourceTree = "<group>"; };
+		DCE57BD427B5DE1F000102F7 /* Spring.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Spring.cpp; path = Source/Components/Physics/Constraints/Spring.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -114,6 +124,11 @@
 		DC0D29F127AD2D060094C970 = {
 			isa = PBXGroup;
 			children = (
+				DC69AB1327B5E2140048B179 /* Broadphase.cpp */,
+				DC69AB1427B5E2140048B179 /* BroadphaseOctree.cpp */,
+				DCE57BD327B5DE1F000102F7 /* DistanceJoint.cpp */,
+				DCE57BD427B5DE1F000102F7 /* Spring.cpp */,
+				DCE57BD127B5DE0F000102F7 /* OrbitCameraController.cpp */,
 				DC0D2B6227AD3A800094C970 /* Include */,
 				DC0D2B2427AD39730094C970 /* Source */,
 				DC0D2A0927AD2D830094C970 /* Source */,
@@ -301,6 +316,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DC69AB1527B5E2140048B179 /* Broadphase.cpp in Sources */,
+				DC69AB1627B5E2140048B179 /* BroadphaseOctree.cpp in Sources */,
+				DCE57BD527B5DE1F000102F7 /* DistanceJoint.cpp in Sources */,
+				DCE57BD627B5DE1F000102F7 /* Spring.cpp in Sources */,
+				DCE57BD227B5DE0F000102F7 /* OrbitCameraController.cpp in Sources */,
 				DC0D2B3D27AD39DD0094C970 /* Light.cpp in Sources */,
 				DC0D2B5927AD3A3C0094C970 /* Texture.cpp in Sources */,
 				DC0D2B5A27AD3A3C0094C970 /* RenderTexture.cpp in Sources */,
@@ -492,6 +512,7 @@
 				EXECUTABLE_PREFIX = lib;
 				GCC_ENABLE_CPP_EXCEPTIONS = YES;
 				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = NDEBUG;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};

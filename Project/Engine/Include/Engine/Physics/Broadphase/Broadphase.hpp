@@ -37,12 +37,12 @@ namespace Engine::Physics
 	};
 
 	struct BasicBroadphase : public Broadphase
-	{
+	{		
 		void Insert(Components::Collider* collider) override;
 		void Remove(Components::Collider* collider) override;
 
-		virtual Components::Collider* GetCollider(glm::vec3& point) override;
-		virtual std::vector<CollisionFrame>& GetPotentialCollisions() override;
+		Components::Collider* GetCollider(glm::vec3& point) override;
+		std::vector<CollisionFrame>& GetPotentialCollisions() override;
 
 		std::vector<Components::Collider*> Query(Sphere& bounds) const override;
 		std::vector<Components::Collider*> Query(AABB& bounds) const override;

@@ -74,7 +74,7 @@ void PhysicsDemo::OnStart()
 #ifdef NDEBUG
 	const int TowerSize = 10;
 #else
-	const int TowerSize = 3;
+	const int TowerSize = 5;
 #endif
 	for (int x = 0; x < TowerSize; x++)
 	{
@@ -227,11 +227,11 @@ void PhysicsDemo::OnDraw()
 		ImGui::Text("FPS: %f\n", Renderer::GetFPS());
 		ImGui::Text("Total Objects: %i", TotalObjects);
 		ImGui::TextColored(
-			(frameTime < (1000.0f / 60.0f)) ? ColourGood : ColourBad,
+			(frameTime < (1000.0f / 30.0f)) ? ColourGood : ColourBad,
 			"Render  Frame Time: %.1fms",
 			frameTime);
 		ImGui::TextColored(
-			(lastTimeStep < desiredTimestep) ? ColourGood : ColourBad,
+			(lastTimeStep <= desiredTimestep) ? ColourGood : ColourBad,
 			"Physics Frame Time: %.1fms / %.1fms",
 			lastTimeStep, desiredTimestep
 		);
