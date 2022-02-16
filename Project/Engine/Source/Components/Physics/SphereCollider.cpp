@@ -24,7 +24,7 @@ void SphereCollider::DrawGizmos()
 #ifndef NDEBUG
 	Gizmos::Colour = { 0, 1, 0, 1 };
 	Gizmos::DrawWireSphere(m_Sphere.Position, m_Radius);
-	Gizmos::DrawWireCube(m_Bounds.Position, m_Bounds.Extents);
+	// Gizmos::DrawWireCube(m_Bounds.Position, m_Bounds.Extents);
 #endif
 }
 

@@ -34,7 +34,7 @@ void BoxCollider::DrawGizmos()
 	Gizmos::DrawWireCube(
 		m_Bounds.Position,
 		m_Bounds.Extents,
-		transform->Rotation);
+		m_Bounds.Orientation);
 #endif
 }
 

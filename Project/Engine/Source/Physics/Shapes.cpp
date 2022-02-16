@@ -167,6 +167,8 @@ bool AABB::LineTest(Line& line)
 #pragma region OBB
 OBB::OBB(vec3 position, vec3 extents, mat3 orientation) :
 	Extents(extents),
+	m_VertexExtents(),
+	m_VertexPosition(),
 	Position(position),
 	Orientation(orientation)
 {
@@ -178,7 +180,6 @@ OBB::OBB(vec3 position, vec3 extents, mat3 orientation) :
 bool OBB::IsPointInside(vec3& point) const
 {
 	vec3 dir = point - Position;
-	vec3 extents = Extents;
 
 	// Iterate & test over each axis
 	for (int i = 0; i < 3; i++)
@@ -186,9 +187,9 @@ bool OBB::IsPointInside(vec3& point) const
 		vec3 axis = Orientation[i];
 		float distance = dot(dir, axis);
 
-		if (distance > extents[i])
+		if (distance > Extents[i])
 			return false;
-		if (distance < -extents[i])
+		if (distance < -Extents[i])
 			return false;
 	}
 
@@ -199,13 +200,12 @@ vec3 OBB::GetClosestPoint(vec3& point) const
 {
 	vec3 result = Position;
 	vec3 dir = point - Position;
-	vec3 extents = Extents;
 
 	// Iterate & test over each axis
 	for (int i = 0; i < 3; i++)
 	{
 		vec3 axis = Orientation[i];
-		float distance = std::clamp(dot(dir, axis), -extents[i], extents[i]);
+		float distance = std::clamp(dot(dir, axis), -Extents[i], Extents[i]);
 
 		result += axis * distance;
 	}
@@ -222,8 +222,7 @@ Interval OBB::GetInterval(const vec3& axis)
 
 	for (int i = 1; i < 8; i++)
 	{
-		// float projection = dot(axis, vertices[i]);
-		float projection = axis.x * vertices[i].x + axis.y * vertices[i].y + axis.z * vertices[i].z;
+		float projection = dot(axis, vertices[i]);
 		result.Min = projection < result.Min ? projection : result.Min;
 		result.Max = projection > result.Max ? projection : result.Max;
 	}
@@ -263,18 +262,17 @@ bool OBB::Raycast(Ray& ray, RaycastHit* outResult)
 
 	// Compare f against ray and store min,max results in t
 	float t[6] = { 0, 0, 0, 0, 0, 0 };
-	vec3 size = Extents;
 	for (int i = 0; i < 3; i++)
 	{
 		if (BasicallyZero(f[i]))
 		{
-			if (-e[i] - size[i] > 0 ||
-				-e[i] + size[i] < 0)
+			if (-e[i] - Extents[i] > 0 ||
+				-e[i] + Extents[i] < 0)
 				return false; // No collision occurs, exit
 			f[i] = 0.00001f; // Avoid division by 0
 		}
-		t[i * 2 + 0] = (e[i] + size[i]) / f[i]; // Min
-		t[i * 2 + 1] = (e[i] - size[i]) / f[i]; // Max
+		t[i * 2 + 0] = (e[i] + Extents[i]) / f[i]; // Min
+		t[i * 2 + 1] = (e[i] - Extents[i]) / f[i]; // Max
 	}
 
 	float tmin = fmaxf(
@@ -297,15 +295,15 @@ bool OBB::Raycast(Ray& ray, RaycastHit* outResult)
 	if (outResult)
 	{
 		outResult->Hit = true;
-		outResult->Distance = tmin < 0 ? tmax : tmin;
+		outResult->Distance = tmin < 0.0f ? tmax : tmin;
 		outResult->Point = ray.Origin + ray.Direction * outResult->Distance;
 
 		// Find normal of face
 		vec3 normals[] =
 		{
-			x, x * -1.0f,
-			y, y * -1.0f,
-			z, z * -1.0f
+			x, -x,
+			y, -y,
+			z, -z
 		};
 		for (int i = 0; i < 6; i++)
 			if (BasicallyZero(outResult->Distance - t[i]))
@@ -373,6 +371,7 @@ vector<vec3>& OBB::GetVertices()
 {
 	if (Position == m_VertexPosition && Extents == m_VertexExtents)
 		return m_Vertices;
+
 	m_VertexPosition = Position;
 	m_VertexExtents = Extents;
 
@@ -401,7 +400,7 @@ vector<vec3>& OBB::GetVertices()
 vector<vec3> OBB::ClipEdges(vector<Line>& edges)
 {
 	vector<vec3> results;
-	results.reserve(edges.size());
+	results.reserve(edges.size() * 3);
 
 	vec3 intersection;
 	vector<Plane>& planes = GetPlanes();

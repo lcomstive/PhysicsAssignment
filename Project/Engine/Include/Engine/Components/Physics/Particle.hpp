@@ -30,6 +30,8 @@ namespace Engine::Components
 		float GetRestitution();
 		void  SetRestitution(float value);
 
+		void SetCollisionRadius(float radius);
+
 		float InverseMass();
 
 		void SolveConstraints(float timestep) override;

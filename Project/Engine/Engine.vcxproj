@@ -210,6 +210,7 @@
     <ClCompile Include="Source\Components\OrbitCameraController.cpp" />
     <ClCompile Include="Source\Components\Physics\BoxCollider.cpp" />
     <ClCompile Include="Source\Components\Physics\Collider.cpp" />
+    <ClCompile Include="Source\Components\Physics\Constraints\Cloth.cpp" />
     <ClCompile Include="Source\Components\Physics\Constraints\DistanceJoint.cpp" />
     <ClCompile Include="Source\Components\Physics\Constraints\Spring.cpp" />
     <ClCompile Include="Source\Components\Physics\Particle.cpp" />
@@ -254,6 +255,7 @@
     <ClInclude Include="Include\Engine\Components\OrbitCameraController.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\BoxCollider.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\Collider.hpp" />
+    <ClInclude Include="Include\Engine\Components\Physics\Constraints\Cloth.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\Constraints\DistanceJoint.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\Constraints\Spring.hpp" />
     <ClInclude Include="Include\Engine\Components\Physics\Particle.hpp" />

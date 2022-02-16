@@ -17,6 +17,8 @@ namespace Engine::Components
 		void SetRestingLength(float length);
 		float GetRestingLength();
 
+		void DrawGizmos() override;
+
 	protected:
 		Components::Particle* m_Point1;
 		Components::Particle* m_Point2;

@@ -26,11 +26,28 @@ Mesh::~Mesh()
 	glDeleteVertexArrays(1, &m_VAO);
 }
 
-void Mesh::SetData(std::vector<Vertex> vertices, std::vector<unsigned int> indices)
+void Mesh::SetData(std::vector<Vertex>& vertices, std::vector<unsigned int> indices)
 {
 	m_Vertices = vertices;
 	m_Indices = indices;
-	Setup();
+
+	if (m_VAO == GL_INVALID_VALUE)
+	{
+		Setup();
+		return;
+	}
+
+	glBindVertexArray(m_VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, m_Vertices.size() * sizeof(Vertex), &m_Vertices[0]);
+
+	if (m_Indices.size() > 0)
+	{
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, m_Indices.size() * sizeof(unsigned int), &m_Indices[0]);
+	}
+
+	glBindVertexArray(0);
 }
 
 void Mesh::Setup()

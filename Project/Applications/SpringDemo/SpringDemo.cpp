@@ -39,7 +39,7 @@ unsigned int TotalObjects = 0;
 void SpringDemo::OnStart()
 {
 	// Set ImGui Font
-	ImGui::GetIO().Fonts->AddFontFromFileTTF("./Assets/Fonts/Source Sans Pro/SourceSansPro-Regular.ttf", 16.0f);
+	ImGui::GetIO().Fonts->AddFontFromFileTTF((AssetDir + "Fonts/Source Sans Pro/SourceSansPro-Regular.ttf").c_str(), 16.0f);
 	
 	// Main Camera //
 	GameObject* cameraObj = new GameObject(CurrentScene(), "Main Camera");
@@ -58,7 +58,6 @@ void SpringDemo::OnStart()
 	PointA = new GameObject(CurrentScene(), "Spring Point A");
 	Particle* particleA = PointA->AddComponent<Particle>();
 	particleA->IsStatic = true;
-	particleA->SetRestitution(0.0f);
 	
 	PointA->GetTransform()->Position = { 0, 2, 0 };
 	PointA->GetTransform()->Scale = vec3(0.2f);
@@ -69,8 +68,6 @@ void SpringDemo::OnStart()
 	PointB->GetTransform()->Position = { 1, 0.5f, 0 };
 	PointB->GetTransform()->Scale = vec3(0.2f);
 	PointB->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
-	particleB->SetRestitution(0.0f);
-	PointB->AddComponent<BoxCollider>();
 
 	// Create spring
 	DemoSpring = PointA->AddComponent<Spring>();
@@ -79,10 +76,7 @@ void SpringDemo::OnStart()
 	DemoSpring->SetBodies(particleA, particleB);
 }
 
-void SpringDemo::OnShutdown()
-{
-	delete gridMesh;
-}
+void SpringDemo::OnShutdown() { delete gridMesh; }
 
 RaycastHit Hit = {};
 const float CameraSpeed = 5.0f;
@@ -103,19 +97,6 @@ void SpringDemo::OnUpdate()
 	if (Input::IsKeyDown(GLFW_KEY_RIGHT)) PointA->GetTransform()->Position.x += SpringMoveSpeed;
 	if (Input::IsKeyDown(GLFW_KEY_UP))    PointA->GetTransform()->Position.y += SpringMoveSpeed;
 	if (Input::IsKeyDown(GLFW_KEY_DOWN))  PointA->GetTransform()->Position.y -= SpringMoveSpeed;
-
-	Ray ray;
-	ray.Origin = Camera::GetMainCamera()->GetTransform()->Position;
-	ray.Direction = { 0, 0, -1 };
-
-	Collider* hitCollider = CurrentScene()->GetPhysics().Raycast(ray, &Hit);
-
-	if (hitCollider && Input::IsKeyPressed(GLFW_KEY_F))
-	{
-		Rigidbody* rb = hitCollider->GetRigidbody();
-		if (rb)
-			rb->ApplyForce(-Hit.Normal * 10.0f, ForceMode::Impulse);
-	}
 }
 
 void SpringDemo::OnDraw()
@@ -136,11 +117,11 @@ void SpringDemo::OnDraw()
 	static bool springWindowOpen = true;
 	if (ImGui::Begin("Spring Demo", &springWindowOpen))
 	{
-		if (ImGui::SliderFloat("Stiffness", &SpringStiffness, 0.0f, 100.0f))
+		if (ImGui::SliderFloat("Stiffness", &SpringStiffness, 0.0f, 1000.0f))
 			DemoSpring->SetConstants(SpringStiffness, SpringDampingFactor);
 		if (ImGui::SliderFloat("Dampening", &SpringDampingFactor, 0.0f, 1.0f))
 			DemoSpring->SetConstants(SpringStiffness, SpringDampingFactor);
-		if (ImGui::SliderFloat("Resting Length", &SpringRestingLength, 0.1f, 100.0f))
+		if (ImGui::SliderFloat("Resting Length", &SpringRestingLength, 0.1f, 10.0f))
 			DemoSpring->SetRestingLength(SpringRestingLength);
 
 		ImGui::End();

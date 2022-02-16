@@ -1,4 +1,5 @@
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/euler_angles.hpp>
 #include <Engine/Graphics/Shader.hpp>
 #include <Engine/Components/Transform.hpp>
 
@@ -29,6 +30,12 @@ vec3 Transform::GetGlobalRotation()
 	if (m_Parent)
 		rot += m_Parent->GetGlobalRotation();
 	return rot;
+}
+
+mat4 Transform::GetGlobalRotationMatrix()
+{
+	vec3 rotation = GetGlobalRotation();
+	return eulerAngleXYZ(rotation.x, rotation.y, rotation.z);
 }
 
 void Transform::AddChild(Transform* child)

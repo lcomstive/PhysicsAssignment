@@ -1,5 +1,7 @@
 #include <glm/glm.hpp>
 #include <Engine/GameObject.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
 #include <Engine/Components/Camera.hpp>
 #include <Engine/Graphics/Renderer.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -26,13 +28,8 @@ Camera* Camera::GetMainCamera() { return s_MainCamera; }
 mat4 Camera::GetViewMatrix()
 {
 	Transform* transform = GetTransform();
-	vec3 forward =
-	{
-		cos(transform->Rotation.y) * cos(transform->Rotation.x),
-		sin(transform->Rotation.x),
-		sin(transform->Rotation.y) * cos(transform->Rotation.x)
-	};
-	forward = normalize(forward);
+	
+	vec3 forward = GetForwardDirection();
 
 	vec3 right = normalize(cross(forward, WorldUp));
 	vec3 up = normalize(cross(right, forward));
@@ -62,4 +59,18 @@ void Camera::FillShader(Shader* shader)
 	shader->Set("camera.ViewMatrix", GetViewMatrix());
 	shader->Set("camera.ProjectionMatrix", GetProjectionMatrix());
 	shader->Set("camera.Position", GetTransform()->GetGlobalPosition());
+}
+
+vec3 Camera::GetRightDirection() { return normalize(cross(GetForwardDirection(), WorldUp)); }
+vec3 Camera::GetUpDirection() { return normalize(cross(GetRightDirection(), GetForwardDirection())); }
+
+vec3 Camera::GetForwardDirection()
+{
+	Transform* transform = GetTransform();
+	return normalize(vec3
+	{
+		cos(transform->Rotation.y) * cos(transform->Rotation.x),
+		sin(transform->Rotation.x),
+		sin(transform->Rotation.y) * cos(transform->Rotation.x)
+	});
 }

@@ -16,7 +16,11 @@
 #pragma warning(disable : 4244)
 
 #define TOWER_DEMO			1
-#define DISTANCE_JOINT_DEMO 0
+#define TRIGGER_DEMO		0
+#define ROPE_DEMO			0
+
+#define DRAW_GRID			0
+#define CAMERA_RAY_FORCE	1
 
 using namespace std;
 using namespace glm;
@@ -32,27 +36,33 @@ const float WallDistance = 100.0f, WallThickness = 5;
 const vec3 WallOffset = { 0, WallDistance - WallThickness - 10.0f, 0 };
 Material WallMaterial = {};
 
+#if DRAW_GRID
 // Grid
 Mesh* gridMesh = nullptr;
 const int GridSize = 250;
-
-#if DISTANCE_JOINT_DEMO
-#include <Engine/Components/Physics/Constraints/DistanceJoint.hpp>
-
-float DistanceJointLength = 3.0f;
-DistanceJoint* DemoDistanceJoint = nullptr;
 #endif
 
-#if DISTANCE_JOINT_DEMO
-GameObject* PointA = nullptr;
-GameObject* PointB = nullptr;
+#if ROPE_DEMO
+#include <Engine/Components/Physics/Constraints/Spring.hpp>
+GameObject* RopeRoot = nullptr;
+
+float RopeStiffness = 500.0f;
+float RopeRestingLength = 1.0f;
+float RopeDampingFactor = 0.1f;
+
+vector<Spring*> RopeComponents;
+#endif
+
+#if CAMERA_RAY_FORCE
+RaycastHit Hit = {};
+const float RayForce = 10.0f;
 #endif
 
 unsigned int TotalObjects = 0;
 void PhysicsDemo::OnStart()
 {
 	// Set ImGui Font
-	ImGui::GetIO().Fonts->AddFontFromFileTTF("./Assets/Fonts/Source Sans Pro/SourceSansPro-Regular.ttf", 16.0f);
+	ImGui::GetIO().Fonts->AddFontFromFileTTF((AssetDir + "Fonts/Source Sans Pro/SourceSansPro-Regular.ttf").c_str(), 16.0f);
 
 	// Default Cube Mesh //
 	MeshRenderer::MeshInfo meshInfo;
@@ -89,7 +99,8 @@ void PhysicsDemo::OnStart()
 				go->GetTransform()->Rotation = radians(vec3{ Random(-180, 180), Random(-180, 180), Random(-180, 180) });
 
 				Rigidbody* rb = go->AddComponent<Rigidbody>();
-				rb->SetRestitution(0.9f);
+				rb->SetFriction(0.1f);
+				rb->SetRestitution(0.35f);
 
 				bool sphere = rand() % 2 == 0;
 				if (sphere)
@@ -100,7 +111,7 @@ void PhysicsDemo::OnStart()
 				else
 				{
 					meshInfo.Mesh = Mesh::Cube();
-					BoxCollider* bCollider = go->AddComponent<BoxCollider>();					
+					BoxCollider* bCollider = go->AddComponent<BoxCollider>();
 				}
 
 				go->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
@@ -111,62 +122,75 @@ void PhysicsDemo::OnStart()
 	}
 #endif
 
-#if DISTANCE_JOINT_DEMO
-	PointA = new GameObject(CurrentScene(), "Spring Point A");
-	Particle* particleA = PointA->AddComponent<Particle>();
-	particleA->IsStatic = true;
-	particleA->SetRestitution(0.0f);
-	
-	PointA->GetTransform()->Position = { 0, 2, 0 };
-	PointA->GetTransform()->Scale = vec3(0.2f);
-	PointA->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+#if TRIGGER_DEMO
+	// Create trigger
+	GameObject* triggerObject = new GameObject(CurrentScene(), "Trigger");
+	triggerObject->GetTransform()->Scale = { 2.5f, 0.1f, 2.5f };
+	BoxCollider* trigger = triggerObject->AddComponent<BoxCollider>();
+	trigger->IsTrigger = true;
 
-	PointB = new GameObject(CurrentScene(), "Spring Point B");
-	Particle* particleB = PointB->AddComponent<Particle>();
-	PointB->GetTransform()->Position = { 1, 0.5f, 0 };
-	PointB->GetTransform()->Scale = vec3(0.2f);
-	PointB->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
-	particleB->SetRestitution(0.0f);
+	meshInfo.Material.Albedo = { 0, 1, 0, 1 };
+	triggerObject->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 
-	DemoDistanceJoint = PointA->AddComponent<DistanceJoint>();
-	DemoDistanceJoint->Initialise(particleA, particleB, DistanceJointLength);
+	trigger->SetTriggerEnterEvent([=](Collider*) { triggerObject->GetComponent<MeshRenderer>()->Meshes[0].Material.Albedo = { 1, 0, 0, 1 }; });
+	trigger->SetTriggerExitEvent([=](Collider*) { triggerObject->GetComponent<MeshRenderer>()->Meshes[0].Material.Albedo = { 0, 1, 0, 1 }; });
+	TotalObjects++;
+
+	// Create object to fall through trigger
+	GameObject* fallingObject = new GameObject(CurrentScene(), "Falling Object");
+	fallingObject->GetTransform()->Position = { 0, 5, 0 };
+
+	meshInfo.Material.Albedo = { 0, 0, 1, 1 };
+	fallingObject->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+	fallingObject->AddComponent<Rigidbody>();
+	fallingObject->AddComponent<BoxCollider>()->SetCollisionEvent([=](Collider*, Rigidbody*) { fallingObject->GetTransform()->Position = { 0, 5, 0 }; });
+
+	TotalObjects++;
+#endif
+
+#if ROPE_DEMO
+	const int ropeLength = 7;
+	Particle* previousParticle = nullptr;
+	meshInfo.Material.Albedo = { 0.5f, 0.5f, 0.5f, 1.0f };
+	for (int i = 0; i < ropeLength; i++)
+	{
+		GameObject* rope = new GameObject(CurrentScene(), "Rope " + to_string(i));
+		rope->GetTransform()->Position = { i * RopeRestingLength, 0, 0.0f };
+		rope->GetTransform()->Scale = vec3(0.2f);
+		rope->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+
+		Particle* particle = rope->AddComponent<Particle>();
+		particle->SetMass(10.0f);
+		if (i == 0)
+			particle->IsStatic = true;
+
+		if (previousParticle)
+		{
+			Spring* spring = rope->AddComponent<Spring>();
+			spring->SetBodies(previousParticle, particle);
+			spring->SetConstants(RopeStiffness, RopeDampingFactor);
+			spring->SetRestingLength(RopeRestingLength);
+			RopeComponents.emplace_back(spring);
+		}
+		previousParticle = particle;
+
+		if (i == 0)
+			RopeRoot = rope;
+	}
 #endif
 }
 
 void PhysicsDemo::OnShutdown()
 {
+#if DRAW_GRID
 	delete gridMesh;
+#endif
 }
 
-RaycastHit Hit = {};
 const float CameraSpeed = 5.0f;
 const float CameraRotationSpeed = 5.0f;
 void PhysicsDemo::OnUpdate()
 {
-	// First person view camera controls
-	Camera* camera = Camera::GetMainCamera();
-	Transform* transform = camera->GetTransform();
-
-	float speed = CameraSpeed * (Input::IsKeyDown(GLFW_KEY_LEFT_SHIFT) ? 2.0f : 1.0f);
-	speed *= Renderer::GetDeltaTime();
-
-	if (Input::IsKeyDown(GLFW_KEY_A)) transform->Position.x -= speed;
-	if (Input::IsKeyDown(GLFW_KEY_D)) transform->Position.x += speed;
-	if (Input::IsKeyDown(GLFW_KEY_W)) transform->Position.z -= speed;
-	if (Input::IsKeyDown(GLFW_KEY_S)) transform->Position.z += speed;
-
-	if (Input::IsKeyDown(GLFW_KEY_Q)) transform->Position.y -= speed;
-	if (Input::IsKeyDown(GLFW_KEY_E)) transform->Position.y += speed;
-
-	camera->FieldOfView = std::clamp(camera->FieldOfView - Input::GetScrollDelta(), 10.0f, 120.0f);
-
-	Input::ShowMouse(!Input::IsMouseDown(GLFW_MOUSE_BUTTON_2));
-	if (Input::IsMouseDown(GLFW_MOUSE_BUTTON_2))
-	{
-		vec2 mouseDelta = Input::GetMouseDelta();
-		transform->Rotation += radians(vec3{ -mouseDelta.y, mouseDelta.x, 0 } *float(CameraRotationSpeed * Renderer::GetDeltaTime()));
-	}
-
 	if (Input::IsKeyPressed(GLFW_KEY_F11))
 		ToggleFullscreen();
 
@@ -176,17 +200,12 @@ void PhysicsDemo::OnUpdate()
 	if (Input::IsKeyPressed(GLFW_KEY_SPACE))
 		CurrentScene()->GetPhysics().TogglePause();
 
-#if DISTANCE_JOINT_DEMO
-	float SpringMoveSpeed = 2.5f * Renderer::GetDeltaTime();
-	if (Input::IsKeyDown(GLFW_KEY_LEFT))  PointA->GetTransform()->Position.x -= SpringMoveSpeed;
-	if (Input::IsKeyDown(GLFW_KEY_RIGHT)) PointA->GetTransform()->Position.x += SpringMoveSpeed;
-	if (Input::IsKeyDown(GLFW_KEY_UP))    PointA->GetTransform()->Position.y += SpringMoveSpeed;
-	if (Input::IsKeyDown(GLFW_KEY_DOWN))  PointA->GetTransform()->Position.y -= SpringMoveSpeed;
-#endif
+#if CAMERA_RAY_FORCE
+	Camera* camera = Camera::GetMainCamera();
 
 	Ray ray;
-	ray.Origin = Camera::GetMainCamera()->GetTransform()->Position;
-	ray.Direction = { 0, 0, -1 };
+	ray.Origin = camera->GetTransform()->Position;
+	ray.Direction = camera->GetForwardDirection();
 
 	Collider* hitCollider = CurrentScene()->GetPhysics().Raycast(ray, &Hit);
 
@@ -194,8 +213,13 @@ void PhysicsDemo::OnUpdate()
 	{
 		Rigidbody* rb = hitCollider->GetRigidbody();
 		if (rb)
-			rb->ApplyForce(-Hit.Normal * 10.0f, ForceMode::Impulse);
+			rb->ApplyForce(ray.Direction * RayForce, Hit.Point, ForceMode::Impulse);
+
+		Particle* particle = hitCollider->GetGameObject()->GetComponent<Particle>();
+		if (particle)
+			particle->ApplyForce(ray.Direction * RayForce, ForceMode::Impulse);
 	}
+#endif
 }
 
 void PhysicsDemo::OnDraw()
@@ -246,33 +270,45 @@ void PhysicsDemo::OnDraw()
 	}
 // #endif
 
-#if DISTANCE_JOINT_DEMO
-	static bool distanceJointWindowOpen = true;
-	if (ImGui::Begin("Spring Demo", &distanceJointWindowOpen))
+#if ROPE_DEMO
+	static bool ropeWindowOpen = true;
+	if (ImGui::Begin("Rope Demo", &ropeWindowOpen))
 	{
-		if (ImGui::SliderFloat("Distance", &DistanceJointLength, 0.0f, 100.0f))
-			DemoDistanceJoint->SetLength(DistanceJointLength);
+		bool ropeDirty = false;
+
+		if (ImGui::SliderFloat("Stiffness", &RopeStiffness, 0.0f, 1000.0f)) ropeDirty = true;
+		if (ImGui::SliderFloat("Dampening", &RopeDampingFactor, 0.0f, 1.0f)) ropeDirty = true;
+		if (ImGui::SliderFloat("Resting Length", &RopeRestingLength, 0.1f, 10.0f)) ropeDirty = true;
 
 		ImGui::End();
+
+		if (ropeDirty)
+			for (Spring* rope : RopeComponents)
+			{
+				rope->SetRestingLength(RopeRestingLength);
+				rope->SetConstants(RopeStiffness, RopeDampingFactor);
+			}
 	}
 #endif
 }
 
 void PhysicsDemo::OnDrawGizmos()
 {
-	/*
+#if DRAW_GRID
 	if (!gridMesh)
 		gridMesh = Mesh::Grid(GridSize);
 
 	Gizmos::Colour = { 1, 1, 1, 0.2f };
 	Gizmos::Draw(gridMesh, vec3(-GridSize, -WallOffset.y / 2.0f, -GridSize), vec3(GridSize * 2.0f));
-	*/
+#endif
 
+#if CAMERA_RAY_FORCE
 	if (Hit.Distance > 0)
 	{
 		Gizmos::Colour = { 0, 1, 1, 1 };
 		Gizmos::DrawCube(Hit.Point, vec3(0.025f));
 	}
+#endif
 }
 
 void PhysicsDemo::CreateWall(vec3 axis)

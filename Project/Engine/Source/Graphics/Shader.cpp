@@ -7,6 +7,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <Engine/Utilities.hpp>
 #include <Engine/FileWatcher.hpp>
+#include <Engine/Application.hpp>
 #include <Engine/Graphics/Shader.hpp>
 
 using namespace glm;
@@ -35,6 +36,21 @@ void ProcessIncludeFiles(string& text)
 	}
 }
 
+void ReplaceAll(string& text, string search, string replacement)
+{
+	// regex expression for pattern to be searched
+	regex regexp(search);
+	smatch match;
+
+	// regex_search that searches pattern regexp in the string mystr
+	while (regex_search(text, match, regexp))
+		text = text.replace(
+			match.prefix().length(),
+			match.length(),
+			replacement
+		);
+}
+
 // Create a shader from source code
 unsigned int Shader::CreateShader(const string& source, const unsigned int type)
 {
@@ -49,6 +65,7 @@ unsigned int Shader::CreateShader(const string& source, const unsigned int type)
 	if (readSource.empty())
 		return GL_INVALID_VALUE;
 
+	ReplaceAll(readSource, "ASSET_DIR", Application::AssetDir);
 	ProcessIncludeFiles(readSource);
 
 	const char* sourceRaw = readSource.c_str();

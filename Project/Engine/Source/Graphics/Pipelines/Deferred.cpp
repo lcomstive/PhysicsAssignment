@@ -30,8 +30,8 @@ DeferredRenderPipeline::DeferredRenderPipeline()
 
 	Shader* meshShader = new Shader(ShaderStageInfo
 		{
-			"./Assets/Shaders/Deferred/Mesh.vert",
-			"./Assets/Shaders/Deferred/Mesh.frag"
+			Application::AssetDir + "Shaders/Deferred/Mesh.vert",
+			Application::AssetDir + "Shaders/Deferred/Mesh.frag"
 		});
 
 	RenderPipelinePass pass = { meshShader , m_MeshPass };
@@ -53,8 +53,8 @@ DeferredRenderPipeline::DeferredRenderPipeline()
 	pass.Shader = new Shader(
 		ShaderStageInfo
 		{
-			"./Assets/Shaders/Deferred/Lighting.vert",
-			"./Assets/Shaders/Deferred/Lighting.frag",
+			Application::AssetDir + "Shaders/Deferred/Lighting.vert",
+			Application::AssetDir + "Shaders/Deferred/Lighting.frag",
 		});
 	AddPass(pass);
 }

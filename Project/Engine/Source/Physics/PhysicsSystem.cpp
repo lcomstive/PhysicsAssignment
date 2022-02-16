@@ -145,29 +145,14 @@ void PhysicsSystem::PhysicsLoop()
 		float fixedTimestep = m_FixedTimestep.count() / 1000.0f;
 
 		// Check for collisions
-		vector<CollisionFrame>& collisions = m_Broadphase->GetPotentialCollisions();
-		NarrowPhase(collisions); // Test potential collisions & generate manifolds
+		m_Collisions = m_Broadphase->GetPotentialCollisions();
+		NarrowPhase(); // Test potential collisions & generate manifolds
 
 		for (PhysicsComponent* component : m_Components)
 			component->ApplyWorldForces(fixedTimestep);
 
-		// Apply linear impulse resolution
-		for (int k = 0; k < m_ImpulseIteration; k++)
-		{
-			for (CollisionFrame collision : collisions)
-			{
-				int jSize = (int)collision.Result.Contacts.size();
-				for (int j = 0; j < jSize; j++)
-				{
-					if (collision.BRigidbody && !collision.BRigidbody->IsStatic())
-						collision.ARigidbody->ApplyImpulse(collision.BRigidbody, collision.Result, j);
-					else // RB -> Static Collider
-						collision.ARigidbody->ApplyImpulse(collision.B, collision.Result, j);
-				}
-			}
-		}
-
-		PositionalCorrect(collisions);
+		ApplyImpulse();
+		PositionalCorrect();
 
 		for (PhysicsComponent* component : m_Components)
 			component->FixedUpdate(fixedTimestep);
@@ -188,57 +173,88 @@ void PhysicsSystem::PhysicsLoop()
 	}
 }
 
-void PhysicsSystem::PositionalCorrect(std::vector<CollisionFrame>& collisions)
+void PhysicsSystem::PositionalCorrect()
 {
-	if (collisions.empty())
+	if (m_Collisions.empty())
 		return;
 
-	for (CollisionFrame collision : collisions)
+	for (CollisionFrame collision : m_Collisions)
 	{
-		if (collision.ARigidbody->IsStatic())
+		if (collision.A->IsTrigger || collision.B->IsTrigger)
 			continue;
-		bool dynamicB = collision.BRigidbody && !collision.BRigidbody->IsStatic();
 
-		float totalMass = collision.ARigidbody->InverseMass();
-		if (dynamicB)
-			totalMass += collision.BRigidbody->InverseMass();
+		float totalMass = collision.ARigidbody->InverseMass() + (collision.BRigidbody ? collision.BRigidbody->InverseMass() : 0.0f);
 		if (totalMass == 0.0f)
 			continue;
 
 		float depth = fmaxf(collision.Result.PenetrationDepth - m_PenetrationSlack, 0.0f);
-		float scalar = (totalMass == 0.0f) ? 0.0f : depth / totalMass;
-		vec3 correction = collision.Result.Normal * scalar * m_LinearProjectionPercent;
+		vec3 correction = collision.Result.Normal * (depth / totalMass) * m_LinearProjectionPercent;
 
-		collision.A->GetTransform()->Position -= correction * (dynamicB ? collision.ARigidbody->InverseMass() : 1.0f);
-		if (dynamicB)
+		collision.A->GetTransform()->Position -= correction * collision.ARigidbody->InverseMass();
+		if(collision.BRigidbody)
 			collision.B->GetTransform()->Position += correction * collision.BRigidbody->InverseMass();
 	}
 }
 
-void PhysicsSystem::NarrowPhase(vector<CollisionFrame>& potentialCollisions)
+void PhysicsSystem::NarrowPhase()
 {
-	for (int i = (int)potentialCollisions.size() - 1; i >= 0; i--)
+	for (int i = (int)m_Collisions.size() - 1; i >= 0; i--)
 	{
-		potentialCollisions[i].Result = FindCollisionFeatures(potentialCollisions[i].A, potentialCollisions[i].B);
+		m_Collisions[i].Result = FindCollisionFeatures(m_Collisions[i].A, m_Collisions[i].B);
 
-		if (!potentialCollisions[i].Result.IsColliding)
+		if (!m_Collisions[i].Result.IsColliding)
 		{
-			potentialCollisions.erase(potentialCollisions.begin() + i);
+			m_Collisions.erase(m_Collisions.begin() + i);
 			continue;
 		}
 
-		if (!potentialCollisions[i].ARigidbody || potentialCollisions[i].ARigidbody->IsStatic())
+		if (!m_Collisions[i].ARigidbody || m_Collisions[i].ARigidbody->IsStatic())
 		{
 			// A valid non-static rigidbody needs to be in A
 
-			Collider* temp = potentialCollisions[i].A;
-			potentialCollisions[i].A = potentialCollisions[i].B;
-			potentialCollisions[i].ARigidbody = potentialCollisions[i].BRigidbody;
-			potentialCollisions[i].B = temp;
-			potentialCollisions[i].BRigidbody = nullptr;
-			potentialCollisions[i].Result.Normal *= -1.0f;
+			Collider* temp = m_Collisions[i].A;
+			m_Collisions[i].A = m_Collisions[i].B;
+			m_Collisions[i].ARigidbody = m_Collisions[i].BRigidbody;
+			m_Collisions[i].B = temp;
+			m_Collisions[i].BRigidbody = nullptr;
+			m_Collisions[i].Result.Normal *= -1.0f;
 		}
 	}
+}
+
+void PhysicsSystem::ApplyImpulse()
+{
+	// Apply linear impulse resolution
+	for (int k = 0; k < m_ImpulseIteration; k++)
+	{
+		for (CollisionFrame collision : m_Collisions)
+		{
+			int jSize = (int)collision.Result.Contacts.size();
+			for (int j = 0; j < jSize; j++)
+			{
+				if (collision.A->IsTrigger)
+				{
+					collision.A->m_CurrentTriggerEntries.emplace_back(collision.B);
+					continue;
+				}
+
+				if (collision.B->IsTrigger)
+				{
+					collision.B->m_CurrentTriggerEntries.emplace_back(collision.A);
+					continue;
+				}
+
+				if (collision.BRigidbody && !collision.BRigidbody->IsStatic())
+					collision.ARigidbody->ApplyImpulse(collision.BRigidbody, collision.Result, j);
+				else // RB -> Static Collider
+					collision.ARigidbody->ApplyImpulse(collision.B, collision.Result, j);
+			}
+		}
+	}
+
+	for (const auto& collider : m_Colliders)
+		if (collider->IsTrigger)
+			collider->ProcessTriggerEntries();
 }
 
 Collider* PhysicsSystem::Raycast(Ray ray, RaycastHit* outResult) { return Raycast(ray, nullptr, outResult); }
@@ -249,6 +265,14 @@ Collider* PhysicsSystem::Raycast(Ray ray, Collider* ignoreCollider, RaycastHit* 
 
 void PhysicsSystem::DrawGizmos()
 {
+#ifndef NDEBUG
+	for (CollisionFrame& collision : m_Collisions)
+	{
+		for (vec3& contact : collision.Result.Contacts)
+			Gizmos::DrawSphere(contact, .05f);
+	}
+#endif
+
 	if (m_Broadphase)
 		m_Broadphase->DrawGizmos();
 }

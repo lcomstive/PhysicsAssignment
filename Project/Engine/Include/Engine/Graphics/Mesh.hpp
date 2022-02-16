@@ -38,14 +38,14 @@ namespace Engine::Graphics
 
 	public:
 		Mesh();
-		Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, DrawMode drawMode = DrawMode::Triangles);
+		Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices = {}, DrawMode drawMode = DrawMode::Triangles);
 		~Mesh();
 
 		void Draw();
-		void SetData(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
+		void SetData(std::vector<Vertex>& vertices, std::vector<unsigned int> indices = {});
 
-		std::vector<Vertex> GetVertices() { return m_Vertices; }
-		std::vector<unsigned int> GetIndices() { return m_Indices; }
+		std::vector<Vertex>& GetVertices() { return m_Vertices; }
+		std::vector<unsigned int>& GetIndices() { return m_Indices; }
 
 		static Mesh* Quad();
 		static Mesh* Cube();

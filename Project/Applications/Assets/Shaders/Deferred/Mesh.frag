@@ -1,5 +1,5 @@
 #version 330 core
-#include "./Assets/Shaders/Include/Material.inc"
+#include "ASSET_DIR/Shaders/Include/Material.inc"
 
 layout (location = 0) out vec3 gPosition;
 layout (location = 1) out vec3 gNormal;

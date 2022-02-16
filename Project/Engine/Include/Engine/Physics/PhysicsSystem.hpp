@@ -34,6 +34,7 @@ namespace Engine::Physics
 		glm::vec3 m_Gravity = { 0, -9.81f, 0 };
 		std::chrono::milliseconds m_LastTimeStep;
 		std::chrono::milliseconds m_FixedTimestep;
+		std::vector<CollisionFrame> m_Collisions;
 		std::vector<Components::Collider*> m_Colliders;
 		std::vector<Components::PhysicsComponent*> m_Components;
 
@@ -61,8 +62,9 @@ namespace Engine::Physics
 		void AddPhysicsComponent(Components::PhysicsComponent* component);
 		void RemovePhysicsComponent(Components::PhysicsComponent* component);
 
-		void PositionalCorrect(std::vector<CollisionFrame>& collisions);
-		void NarrowPhase(std::vector<CollisionFrame>& potentialCollisions);
+		void NarrowPhase();
+		void ApplyImpulse();
+		void PositionalCorrect();
 
 		friend struct Components::Collider;
 		friend class Components::PhysicsComponent;

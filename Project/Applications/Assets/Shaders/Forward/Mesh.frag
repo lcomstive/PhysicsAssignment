@@ -1,5 +1,5 @@
 #version 330 core
-#include "./Assets/Shaders/Include/Material.inc"
+#include "ASSET_DIR/Shaders/Include/Material.inc"
 
 out vec4 FragColour;
 
@@ -22,7 +22,7 @@ void main()
 
 	FragColour = albedoColour;
 
-	FragColour = vec4(vec3(remap(sin(time), -1, 1, -1, -0.5)) * WorldPos, albedoColour.a);
+	// FragColour = vec4(vec3(remap(sin(time), -1, 1, -1, -0.5)) * WorldPos, albedoColour.a);
 	
 	// Check for alpha clipping
 	if(alphaClipping && FragColour.a <= alphaClipThreshold)

@@ -17,8 +17,14 @@ using namespace Engine::Components;
 
 Application* Application::s_Instance = nullptr;
 
+#ifdef NDEBUG
+const std::string Application::AssetDir = "./Assets/";
+#else
+const std::string Application::AssetDir = "../Assets/";
+#endif
+
 Application::Application(ApplicationArgs args)
-	: m_Args(args), m_Window(nullptr), m_Scene(this)
+	: m_Args(args), m_Window(nullptr), m_Scene(this), m_WindowedResolution(1)
 {
 	s_Instance = this;
 	m_Scene.GetPhysics().SetTimestep(m_Args.FixedTimestep);
@@ -52,8 +58,8 @@ void Application::Run()
 	Renderer::s_FPS = Renderer::s_DeltaTime = 0;
 
 	int frameCount = 0; // Frames counted in the last second
-	double frameCountTime = 0; // How long since the last second has passed
-	double frameStartTime = (Renderer::s_Time = glfwGetTime()); // Game time at start of frame
+	float frameCountTime = 0; // How long since the last second has passed
+	float frameStartTime = (Renderer::s_Time = (float)glfwGetTime()); // Game time at start of frame
 
 	m_Scene.GetPhysics().Start();
 	while (!glfwWindowShouldClose(m_Window))
@@ -88,7 +94,7 @@ void Application::Run()
 		glfwPollEvents();
 
 		// Calculate delta time
-		double frameEndTime = (Renderer::s_Time = glfwGetTime());
+		float frameEndTime = (Renderer::s_Time = (float)glfwGetTime());
 		Renderer::s_DeltaTime = frameEndTime - frameStartTime;
 		frameStartTime = frameEndTime;
 
@@ -97,7 +103,7 @@ void Application::Run()
 		frameCountTime += Renderer::s_DeltaTime;
 		if (frameCountTime >= 1.0)
 		{
-			Renderer::s_FPS = frameCount;
+			Renderer::s_FPS = float(frameCount);
 			frameCount = 0;
 			frameCountTime = 0;
 		}
@@ -237,8 +243,8 @@ void Application::SetupGizmos()
 	pass.Pass = new RenderPass(spec);
 	pass.Shader = new Shader(ShaderStageInfo
 		{
-			"./Assets/Shaders/Gizmos.vert",
-			"./Assets/Shaders/Gizmos.frag"
+			AssetDir + "Shaders/Gizmos.vert",
+			AssetDir + "Shaders/Gizmos.frag"
 		});
 	pass.DrawCallback = [&]()
 	{

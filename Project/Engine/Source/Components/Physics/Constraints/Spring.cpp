@@ -1,9 +1,11 @@
 #include <Engine/Utilities.hpp> // Magnitude
+#include <Engine/Graphics/Gizmos.hpp>
 #include <Engine/Components/Transform.hpp>
 #include <Engine/Components/Physics/Rigidbody.hpp>
 #include <Engine/Components/Physics/Constraints/Spring.hpp>
 
 using namespace glm;
+using namespace Engine::Graphics;
 using namespace Engine::Components;
 
 Particle* Spring::GetPoint1() { return m_Point1; }
@@ -26,19 +28,30 @@ void  Spring::SetRestingLength(float length) { m_RestingLength = length; }
 
 void Spring::ApplyForces(float timestep)
 {
-	vec3 relPos = m_Point1->GetTransform()->Position - m_Point2->GetTransform()->Position;
-	vec3 relVel = m_Point1->GetVelocity() - m_Point2->GetVelocity();
+	vec3 point1 = m_Point1->GetTransform()->GetGlobalPosition();
+	vec3 point2 = m_Point2->GetTransform()->GetGlobalPosition();
 
-	// Hooke's Law
-	float x = Magnitude(relPos) - m_RestingLength;
-	float v = Magnitude(relVel);
+	float length = distance(point1, point2);
+	vec3 direction = normalize(point1 - point2);
 
-	// Restoring force of spring
-	float F = -m_Stiffness * x - m_Dampening * v;
+	vec3 relVel = m_Point2->GetVelocity() - m_Point1->GetVelocity();
 
-	// Turn it into an impulse force
-	vec3 impulse = normalize(relPos) * F;
+	vec3 force = direction * m_Stiffness * (m_RestingLength - length) - m_Dampening * relVel;
 
-	m_Point1->ApplyForce( impulse * m_Point1->InverseMass(), ForceMode::Impulse);
-	m_Point2->ApplyForce(-impulse * m_Point2->InverseMass(), ForceMode::Impulse);
+	// Cap the force to prevent numerical instability
+	const float MaxForce = 1000.0f; // Newtons
+	float forceMagnitude = Magnitude(force);
+	if (forceMagnitude > MaxForce)
+		force *= MaxForce / forceMagnitude;
+
+	m_Point1->ApplyForce( force * timestep, ForceMode::Impulse);
+	m_Point2->ApplyForce(-force * timestep, ForceMode::Impulse);
+}
+
+void Spring::DrawGizmos()
+{
+#ifndef NDEBUG
+	Gizmos::Colour = { 0, 1, 0, 1 };
+	Gizmos::DrawLine(m_Point1->GetTransform()->GetGlobalPosition(), m_Point2->GetTransform()->GetGlobalPosition());
+#endif
 }

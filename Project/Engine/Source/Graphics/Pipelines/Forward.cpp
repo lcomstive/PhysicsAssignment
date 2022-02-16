@@ -20,8 +20,8 @@ ForwardRenderPipeline::ForwardRenderPipeline()
 	
 	Shader* shader = new Shader(ShaderStageInfo
 		{
-			"./Assets/Shaders/Forward/Mesh.vert",
-			"./Assets/Shaders/Forward/Mesh.frag"
+			Application::AssetDir + "Shaders/Forward/Mesh.vert",
+			Application::AssetDir + "Shaders/Forward/Mesh.frag"
 		});
 	RenderPipelinePass pass = { shader, new RenderPass(framebuffer) };
 	pass.DrawCallback = bind(&ForwardRenderPipeline::ForwardPass, this);

@@ -87,6 +87,8 @@ namespace Engine
 		virtual void OnResized(glm::ivec2 resolution) { }
 
 	public:
+		const static std::string AssetDir;
+
 		Application(ApplicationArgs args = {});
 
 		void Run();

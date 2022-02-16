@@ -19,6 +19,7 @@ namespace Engine::Components
 		glm::vec3 GetGlobalScale();
 		glm::vec3 GetGlobalPosition();
 		glm::vec3 GetGlobalRotation();
+		glm::mat4 GetGlobalRotationMatrix();
 
 		Transform* GetParent();
 		std::vector<Transform*> GetChildren();

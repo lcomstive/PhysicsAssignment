@@ -19,6 +19,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "glad", "Dependencies\glad\g
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpringDemo", "Applications\SpringDemo\SpringDemo.vcxproj", "{B23A96C4-6701-4F99-ABC5-824DAB6E25C7}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ClothDemo", "Applications\ClothDemo\ClothDemo.vcxproj", "{1A4BBA9F-5DE1-45BB-91A9-F68A6CCBB1CF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -75,6 +77,14 @@ Global
 		{B23A96C4-6701-4F99-ABC5-824DAB6E25C7}.Release|x64.Build.0 = Release|x64
 		{B23A96C4-6701-4F99-ABC5-824DAB6E25C7}.Release|x86.ActiveCfg = Release|Win32
 		{B23A96C4-6701-4F99-ABC5-824DAB6E25C7}.Release|x86.Build.0 = Release|Win32
+		{1A4BBA9F-5DE1-45BB-91A9-F68A6CCBB1CF}.Debug|x64.ActiveCfg = Debug|x64
+		{1A4BBA9F-5DE1-45BB-91A9-F68A6CCBB1CF}.Debug|x64.Build.0 = Debug|x64
+		{1A4BBA9F-5DE1-45BB-91A9-F68A6CCBB1CF}.Debug|x86.ActiveCfg = Debug|Win32
+		{1A4BBA9F-5DE1-45BB-91A9-F68A6CCBB1CF}.Debug|x86.Build.0 = Debug|Win32
+		{1A4BBA9F-5DE1-45BB-91A9-F68A6CCBB1CF}.Release|x64.ActiveCfg = Release|x64
+		{1A4BBA9F-5DE1-45BB-91A9-F68A6CCBB1CF}.Release|x64.Build.0 = Release|x64
+		{1A4BBA9F-5DE1-45BB-91A9-F68A6CCBB1CF}.Release|x86.ActiveCfg = Release|Win32
+		{1A4BBA9F-5DE1-45BB-91A9-F68A6CCBB1CF}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -85,6 +95,7 @@ Global
 		{76086415-2B32-4ABA-B977-A277D1B91703} = {9F7A7E61-42FF-47A4-B9BC-5C991BBF2EBB}
 		{3E16E7FA-342A-48C1-B3EB-B08AB1DAB72C} = {98F10E37-379C-4204-8F32-126F7DEA4839}
 		{B23A96C4-6701-4F99-ABC5-824DAB6E25C7} = {9F7A7E61-42FF-47A4-B9BC-5C991BBF2EBB}
+		{1A4BBA9F-5DE1-45BB-91A9-F68A6CCBB1CF} = {9F7A7E61-42FF-47A4-B9BC-5C991BBF2EBB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E16E2349-1DC5-4276-9A78-F0011AD1377F}

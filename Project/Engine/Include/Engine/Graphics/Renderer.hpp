@@ -17,7 +17,7 @@ namespace Engine::Graphics
 
 		glm::vec3 Position = { 0, 0, 0 };
 		glm::vec3 Scale = { 1, 1, 1 };
-		glm::vec3 Rotation = { 0, 0, 0 };
+		glm::mat4 Rotation = glm::mat4(1.0f);
 
 		bool DeleteMeshAfterRender = false;
 	};
@@ -30,7 +30,7 @@ namespace Engine::Graphics
 		static bool s_Wireframe, s_VSync;
 		static RenderPipeline* s_Pipeline;
 		static std::vector<DrawCall> s_DrawQueue;
-		static double s_Time, s_FPS, s_DeltaTime;
+		static float s_Time, s_FPS, s_DeltaTime;
 
 		static void Shutdown();
 		static void Resized(glm::ivec2 newResolution);
@@ -43,6 +43,7 @@ namespace Engine::Graphics
 		static void ClearDrawQueue();
 		static void Submit(DrawCall drawCall);
 		static void Submit(Mesh* mesh, Material& material, Components::Transform* transform);
+		static void Submit(Mesh* mesh, Material& material, glm::vec3 position, glm::vec3 scale, glm::mat4 rotation);
 		static void Submit(Mesh* mesh, Material& material, glm::vec3 position, glm::vec3 scale, glm::vec3 rotation);
 
 #pragma region Setters
@@ -62,10 +63,10 @@ namespace Engine::Graphics
 
 #pragma region Getters
 		static bool GetVSync();
-		static double GetFPS();
-		static double GetTime();
+		static float GetFPS();
+		static float GetTime();
 		static uint32_t GetSamples();
-		static double GetDeltaTime();
+		static float GetDeltaTime();
 		static Application* GetApp();
 		static bool GetWireframeMode();
 		static glm::ivec2 GetResolution();

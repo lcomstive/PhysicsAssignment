@@ -25,7 +25,7 @@ Rigidbody::Rigidbody() :
 { }
 
 PhysicsSystem& Rigidbody::GetSystem() { return GetGameObject()->GetScene()->GetPhysics(); }
-float Rigidbody::GetMass() { return m_Mass; }
+float Rigidbody::GetMass() { return m_IsStatic ? 0.0f : m_Mass; }
 void  Rigidbody::SetMass(float mass) { m_Mass = std::clamp(mass, 0.0f, FLT_MAX); }
 float Rigidbody::GetRestitution() { return m_CoR; }
 void  Rigidbody::SetRestitution(float value) { m_CoR = value; }
@@ -35,7 +35,7 @@ bool Rigidbody::IsStatic() { return m_IsStatic; }
 void Rigidbody::SetStatic(bool isStatic) { m_IsStatic = isStatic; }
 vec3 Rigidbody::GetVelocity() { return m_Velocity; }
 
-float Rigidbody::InverseMass() { return m_Mass <= 0.0f ? 0.0f : (1.0f / m_Mass); }
+float Rigidbody::InverseMass() { return (m_IsStatic || m_Mass <= 0.0f) ? 0.0f : (1.0f / m_Mass); }
 float Rigidbody::PotentialEnergy() { return m_Mass * dot(GetSystem().GetGravity(), GetTransform()->Position); }
 
 const mat4 DefaultTensor = inverse(mat4(0.0f));
@@ -57,6 +57,12 @@ void Rigidbody::ApplyForce(glm::vec3 force, ForceMode mode)
 		m_Velocity += force;
 		break;
 	}
+}
+
+void Rigidbody::ApplyForce(glm::vec3 force, glm::vec3 position, ForceMode mode)
+{
+	ApplyForce(force, mode);
+	AddRotationalImpulse(position, force);
 }
 
 void Rigidbody::AddRotationalImpulse(vec3 point, vec3 impulse)
@@ -142,6 +148,12 @@ void Rigidbody::ApplyImpulse(Rigidbody* other, CollisionManifold manifold, int c
 	m_AngularVelocity		 -= vec3(i1 * vec4(cross(r1, impulse), 1.0f));
 	other->m_AngularVelocity += vec3(i2 * vec4(cross(r2, impulse), 1.0f));
 
+	// Call collision event
+	Collider* thisCollider = GetGameObject()->GetComponent<Collider>(true);
+	Collider* otherCollider = other->GetGameObject()->GetComponent<Collider>(true);
+	if( thisCollider->m_CollisionEvent) thisCollider->m_CollisionEvent(otherCollider, other);
+	if(otherCollider->m_CollisionEvent)	otherCollider->m_CollisionEvent(thisCollider, this);
+
 	// Tangent to normal, used to apply friction
 	vec3 t = relativeVel - (relativeNorm * dot(relativeVel, relativeNorm));
 	if (BasicallyZero(MagnitudeSqr(t)))
@@ -154,10 +166,8 @@ void Rigidbody::ApplyImpulse(Rigidbody* other, CollisionManifold manifold, int c
 	d2 = cross(vec3(i1 * vec4(cross(r1, t), 1.0f)), r1);
 	d3 = cross(vec3(i2 * vec4(cross(r2, t), 1.0f)), r2);
 	denominator = d1 + dot(t, d2 + d3);
-	if (denominator == 0.0f)
-		return;
 
-	float jt = numerator / denominator;
+	float jt = denominator == 0.0f ? 0.0f : numerator / denominator;
 	if (!manifold.Contacts.empty() && jt != 0.0f)
 		jt /= (float)manifold.Contacts.size();
 	if (BasicallyZero(jt))
@@ -209,6 +219,11 @@ void Rigidbody::ApplyImpulse(Collider* other, CollisionManifold manifold, int co
 	vec3 impulse = relativeNorm * j;
 	m_Velocity -= impulse * invMass1;
 	m_AngularVelocity -= vec3(i1 * vec4(cross(r1, impulse), 1.0f));
+	
+	// Call collision event
+	Collider* thisCollider = GetGameObject()->GetComponent<Collider>(true);
+	if(thisCollider->m_CollisionEvent)
+		thisCollider->m_CollisionEvent(other, nullptr);
 
 	// Tangent to normal, used to apply friction
 	vec3 t = relativeVel - (relativeNorm * dot(relativeVel, relativeNorm));

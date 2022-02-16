@@ -21,8 +21,12 @@ namespace Engine::Components
 		Graphics::RenderTexture* RenderTarget = nullptr;
 
 		glm::mat4 GetViewMatrix();
-		glm::mat4 GetProjectionMatrix();
 		void FillShader(Graphics::Shader* shader);
+
+		glm::vec3 GetUpDirection();
+		glm::vec3 GetRightDirection();
+		glm::vec3 GetForwardDirection();
+		glm::mat4 GetProjectionMatrix();
 		
 		void SetMainCamera();
 		static Camera* GetMainCamera();

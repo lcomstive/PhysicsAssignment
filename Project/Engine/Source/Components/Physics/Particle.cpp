@@ -48,6 +48,7 @@ void  Particle::SetRestitution(float value) { m_Restitution= value; }
 float Particle::GetFriction() { return m_Friction; }
 void  Particle::SetFriction(float value) { m_Friction = value; }
 vec3  Particle::GetVelocity() { return m_Velocity; }
+void  Particle::SetCollisionRadius(float radius) { GetGameObject()->GetComponent<SphereCollider>()->SetRadius(radius); }
 
 void Particle::Added()
 {
@@ -62,13 +63,14 @@ void Particle::FixedUpdate(float timestep)
 
 	Transform* transform = GetTransform();
 
-	m_PreviousPosition = transform->Position;
+	m_PreviousPosition = transform->GetGlobalPosition();
 
 	vec3 acceleration = m_Force * InverseMass();
-	m_Velocity += (acceleration * timestep) * m_Friction;
+	m_Velocity = m_Velocity * m_Friction + (acceleration * timestep);
 	transform->Position += m_Velocity * timestep;
 
 	m_Force = vec3(0.0f);
+	SolveConstraints(timestep);
 }
 
 void Particle::SolveConstraints(float timestep)
@@ -80,7 +82,7 @@ void Particle::SolveConstraints(float timestep)
 	Collider* collider = GetGameObject()->GetComponent<Collider>(true);
 	PhysicsSystem& system = GetSystem();
 
-	Line line = { m_PreviousPosition, transform->Position };
+	Line line = { m_PreviousPosition, transform->GetGlobalPosition()};
 	if (!system.LineTest(line, collider))
 		return; // No collisions will occur
 
@@ -95,12 +97,14 @@ void Particle::SolveConstraints(float timestep)
 	if(hitCollider)
 	{
 		transform->Position = hit.Point + hit.Normal * 0.003f;
+		if (transform->GetParent())
+			transform->Position -= transform->GetParent()->GetGlobalPosition();
 
 		vec3 vn = hit.Normal * dot(hit.Normal, m_Velocity);
 		vec3 vt = m_Velocity - vn;
 
 		// Record current position to avoid tunnelling
-		m_PreviousPosition = transform->Position;
+		m_PreviousPosition = transform->GetGlobalPosition();
 		m_Velocity = vt - vn * m_Restitution;
 	}
 }

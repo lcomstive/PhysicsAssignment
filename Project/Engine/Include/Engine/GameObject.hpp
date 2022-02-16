@@ -148,22 +148,22 @@ namespace Engine
 		template<typename T>
 		std::vector<T*> GetComponentsInChildren(bool checkInheritedClasses = false)
 		{
+			std::vector<T*> components = {};
+			GetComponentsInChildren(components, checkInheritedClasses);
+			return components;
+		}
+
+		template<typename T>
+		void GetComponentsInChildren(std::vector<T*>& output, bool checkInheritedClasses = false)
+		{
 			Log::Assert(std::is_base_of<Components::Component, T>(), "Tried getting component that did not derive from Engine::Components::Component");
 
-			std::vector<T*> components = {};
 			T* instance = GetComponent<T>(checkInheritedClasses);
 			if (instance)
-				components.emplace_back(instance);
+				output.emplace_back(instance);
 
-			std::vector<Components::Transform*> children = m_Transform->GetChildren();
-			for (Components::Transform* child : children)
-			{
-				instance = child->GetGameObject()->GetComponentInChildren<T>(checkInheritedClasses);
-				if (instance)
-					components.emplace_back(instance);
-			}
-
-			return components;
+			for (Components::Transform* child : GetTransform()->GetChildren())
+				child->GetGameObject()->GetComponentsInChildren<T>(output, checkInheritedClasses);
 		}
 
 		template<typename T>

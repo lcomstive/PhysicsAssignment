@@ -38,7 +38,7 @@ std::vector<CollisionFrame>& BasicBroadphase::GetPotentialCollisions()
 		{
 			OBB& bounds2 = m_Colliders[j]->GetBounds();
 			float dist = distance(bounds.Position, bounds2.Position);
-			if (distance(bounds.Position, bounds2.Position) > magnitude)
+			if (dist * dist > magnitude)
 				continue;
 
 			Rigidbody* bRb = m_Colliders[j]->GetRigidbody();
@@ -88,7 +88,8 @@ bool BasicBroadphase::LineTest(Line& line, Collider* ignoreCollider)
 
 	for (int i = 0; i < m_Colliders.size(); i++)
 	{
-		if (m_Colliders[i] == ignoreCollider ||
+		if (!m_Colliders[i] ||
+			m_Colliders[i] == ignoreCollider ||
 			!m_Colliders[i]->LineTest(line) ||
 			(closest && hit.Distance >= closestHit.Distance))
 			continue;

@@ -27,8 +27,12 @@ namespace Engine::Graphics
 		static void DrawCube(glm::vec3 position, glm::vec3 scale = { 1, 1, 1 }, glm::vec3 rotation = { 0, 0, 0 });
 		static void DrawSphere(glm::vec3 position, float radius);
 
-		static void DrawWireQuad(glm::vec3 position, glm::vec2 scale = { 1, 1 }, glm::vec3 rotation = { 0, 0, 0 });
-		static void DrawWireCube(glm::vec3 position, glm::vec3 scale = { 1, 1, 1 }, glm::vec3 rotation = { 0, 0, 0 });
+		static void DrawWireQuad(glm::vec3 position, glm::vec2 scale, glm::vec3 rotation);
+		static void DrawWireQuad(glm::vec3 position, glm::vec2 scale = { 1, 1 }, glm::mat4 rotation = glm::mat4(1.0f));
+
+		static void DrawWireCube(glm::vec3 position, glm::vec3 scale, glm::vec3 rotation);
+		static void DrawWireCube(glm::vec3 position, glm::vec3 scale = { 1, 1, 1 }, glm::mat4 rotation = glm::mat4(1.0f));
+
 		static void DrawWireSphere(glm::vec3 position, float radius = 1.0f);
 	};
 }
