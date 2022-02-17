@@ -13,12 +13,13 @@ Particle::Particle() :
 	m_Force(),
 	m_Mass(1.0f),
 	m_Velocity(),
+	m_Radius(0.1f),
 	IsTrigger(false),
 	UseGravity(true),
 	m_Friction(0.95f),
+	m_Collider(nullptr),
 	m_Restitution(0.7f),
-	m_PreviousPosition(),
-	m_Initialised(false)
+	m_PreviousPosition()
 { }
 
 PhysicsSystem& Particle::GetSystem() { return GetGameObject()->GetScene()->GetPhysics(); }
@@ -48,12 +49,16 @@ void  Particle::SetRestitution(float value) { m_Restitution= value; }
 float Particle::GetFriction() { return m_Friction; }
 void  Particle::SetFriction(float value) { m_Friction = value; }
 vec3  Particle::GetVelocity() { return m_Velocity; }
-void  Particle::SetCollisionRadius(float radius) { GetGameObject()->GetComponent<SphereCollider>()->SetRadius(radius); }
+void  Particle::SetCollisionRadius(float radius) { m_Collider->SetRadius(radius); }
 
 void Particle::Added()
 {
 	PhysicsComponent::Added();
-	GetGameObject()->AddComponent<SphereCollider>()->SetRadius(m_Radius);
+
+	m_PreviousPosition = GetTransform()->GetGlobalPosition();
+	m_Collider = GetGameObject()->AddComponent<SphereCollider>();
+
+	SetCollisionRadius(m_Radius);
 }
 
 void Particle::FixedUpdate(float timestep)
@@ -79,11 +84,10 @@ void Particle::SolveConstraints(float timestep)
 		return;
 
 	Transform* transform = GetTransform();
-	Collider* collider = GetGameObject()->GetComponent<Collider>(true);
 	PhysicsSystem& system = GetSystem();
 
 	Line line = { m_PreviousPosition, transform->GetGlobalPosition()};
-	if (!system.LineTest(line, collider))
+	if (!system.LineTest(line, m_Collider))
 		return; // No collisions will occur
 
 	vec3 direction = normalize(m_Velocity);
@@ -93,12 +97,12 @@ void Particle::SolveConstraints(float timestep)
 	ray.Direction = direction;
 
 	RaycastHit hit;
-	Collider* hitCollider = system.Raycast(ray, collider, &hit);
+	Collider* hitCollider = system.Raycast(ray, m_Collider, &hit);
 	if(hitCollider)
 	{
 		transform->Position = hit.Point + hit.Normal * 0.003f;
 		if (transform->GetParent())
-			transform->Position -= transform->GetParent()->GetGlobalPosition();
+			transform->Position -= transform->GetParent()->GetGlobalPosition(); // Global -> Local
 
 		vec3 vn = hit.Normal * dot(hit.Normal, m_Velocity);
 		vec3 vt = m_Velocity - vn;

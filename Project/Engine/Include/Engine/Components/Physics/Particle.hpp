@@ -41,8 +41,8 @@ namespace Engine::Components
 		void FixedUpdate(float timestep) override;
 
 	private:
-		const float m_Radius = 0.1f;
-		bool m_Initialised = false;
+		float m_Radius;
+		SphereCollider* m_Collider;
 
 		glm::vec3 m_Force, m_Velocity;
 		float m_Mass, m_Restitution, m_Friction;

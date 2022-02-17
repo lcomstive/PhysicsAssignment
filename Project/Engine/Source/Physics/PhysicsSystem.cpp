@@ -21,7 +21,7 @@ PhysicsSystem::PhysicsSystem(Application* app, milliseconds fixedTimestep) :
 	m_Substeps(5),
 	m_CollidersMutex(),
 	m_LastTimeStep(-1ms),
-	m_ImpulseIteration(5),
+	m_ImpulseIteration(10),
 	m_Broadphase(nullptr),
 	m_Gravity(InitialGravity),
 	m_FixedTimestep(fixedTimestep),
@@ -263,9 +263,11 @@ vector<Collider*> PhysicsSystem::Query(Sphere& bounds) { return m_Broadphase ? m
 bool PhysicsSystem::LineTest(Line line, Engine::Components::Collider* ignoreCollider) { return m_Broadphase ? m_Broadphase->LineTest(line, ignoreCollider) : false; }
 Collider* PhysicsSystem::Raycast(Ray ray, Collider* ignoreCollider, RaycastHit* outResult) { return m_Broadphase ? m_Broadphase->Raycast(ray, ignoreCollider, outResult) : nullptr; }
 
+#define DRAW_CONTACTS 0
 void PhysicsSystem::DrawGizmos()
 {
-#ifndef NDEBUG
+#if !defined(NDEBUG) && DRAW_CONTACTS
+	Gizmos::Colour = { 0, 0, 1, 1 };
 	for (CollisionFrame& collision : m_Collisions)
 	{
 		for (vec3& contact : collision.Result.Contacts)

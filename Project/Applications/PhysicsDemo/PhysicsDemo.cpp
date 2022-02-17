@@ -15,9 +15,10 @@
 
 #pragma warning(disable : 4244)
 
-#define TOWER_DEMO			1
+#define TOWER_DEMO			0
 #define TRIGGER_DEMO		0
 #define ROPE_DEMO			0
+#define PARTICLE_DEMO		1
 
 #define DRAW_GRID			0
 #define CAMERA_RAY_FORCE	1
@@ -84,7 +85,7 @@ void PhysicsDemo::OnStart()
 #ifdef NDEBUG
 	const int TowerSize = 10;
 #else
-	const int TowerSize = 5;
+	const int TowerSize = 3;
 #endif
 	for (int x = 0; x < TowerSize; x++)
 	{
@@ -102,7 +103,7 @@ void PhysicsDemo::OnStart()
 				rb->SetFriction(0.1f);
 				rb->SetRestitution(0.35f);
 
-				bool sphere = rand() % 2 == 0;
+				bool sphere = true; // rand() % 2 == 0;
 				if (sphere)
 				{
 					meshInfo.Mesh = Mesh::Sphere();
@@ -177,6 +178,39 @@ void PhysicsDemo::OnStart()
 		if (i == 0)
 			RopeRoot = rope;
 	}
+#endif
+
+#if PARTICLE_DEMO
+	const float ParticleSize = 0.1f;
+#ifndef NDEBUG
+	const int ParticleTowerSize = 5;
+#else
+	const int ParticleTowerSize = 20;
+#endif
+	meshInfo.Mesh = Mesh::Sphere();
+	for (int x = 0; x < ParticleTowerSize; x++)
+	{
+		for (int y = 0; y < ParticleTowerSize; y++)
+		{
+			for (int z = 0; z < ParticleTowerSize; z++)
+			{
+				GameObject* go = new GameObject(CurrentScene(), "Particle (" + to_string(x) + ", " + to_string(y) + ", " + to_string(z) + ")");
+				go->GetTransform()->Position = vec3(x, y, z) * ParticleSize * 2.0f;
+				go->GetTransform()->Scale = vec3(ParticleSize);
+				go->AddComponent<Particle>()->SetCollisionRadius(ParticleSize);
+				// go->AddComponent<Rigidbody>();				
+				go->AddComponent<SphereCollider>()->SetRadius(ParticleSize);
+
+				meshInfo.Material.Albedo = { Random(0.5f, 1.0f), Random(0.5f, 1.0f), Random(0.5f, 1.0f), 1.0f };
+				go->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+			}
+		}
+	}
+
+	GameObject* obstacle = new GameObject(CurrentScene(), "Particle Obstacle");
+	obstacle->GetTransform()->Position.y = -ParticleTowerSize * ParticleSize * 2.1f;
+	obstacle->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+	obstacle->AddComponent<SphereCollider>();
 #endif
 }
 

@@ -189,6 +189,10 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(OBB& a, OBB& b)
 	bool shouldFlip;
 	for (int i = 0; i < 15; i++)
 	{
+		if (BasicallyZero(faceAxis[i].x)) faceAxis[i].x = 0.0f;
+		if (BasicallyZero(faceAxis[i].y)) faceAxis[i].y = 0.0f;
+		if (BasicallyZero(faceAxis[i].z)) faceAxis[i].z = 0.0f;
+
 		if (MagnitudeSqr(faceAxis[i]) < 0.001f)
 			continue;
 
@@ -227,6 +231,7 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(OBB& a, OBB& b)
 		result.Contacts[i] = contact + (axis * dot(axis, pointOnPlane - contact));
 
 		// Check for duplicates
+		/*
 		for (int j = (int)result.Contacts.size() - 1; j > i; j--)
 		{
 			if (BasicallyZero(MagnitudeSqr(result.Contacts[j] - result.Contacts[i])))
@@ -235,6 +240,7 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(OBB& a, OBB& b)
 				break;
 			}
 		}
+		*/
 	}
 
 	result.Normal = axis;

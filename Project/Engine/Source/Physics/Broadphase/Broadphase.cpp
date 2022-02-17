@@ -31,25 +31,23 @@ std::vector<CollisionFrame>& BasicBroadphase::GetPotentialCollisions()
 
 	for (uint32_t i = 0, size = (uint32_t)m_Colliders.size(); i < size; i++)
 	{
-		Rigidbody* aRb = m_Colliders[i]->GetRigidbody();
 		OBB& bounds = m_Colliders[i]->GetBounds();
+		Sphere sphericalBounds = { bounds.Position, Magnitude(bounds.Extents) };
 		float magnitude = MagnitudeSqr(bounds.Extents);
 		for (uint32_t j = i + 1; j < size; j++)
 		{
 			OBB& bounds2 = m_Colliders[j]->GetBounds();
-			float dist = distance(bounds.Position, bounds2.Position);
-			if (dist * dist > magnitude)
-				continue;
+			Sphere sphericalBounds2 = { bounds2.Position, Magnitude(bounds2.Extents) };
+			if (!TestSphereSphereCollider(sphericalBounds, sphericalBounds2))
+				continue; // Not within reasonable radius of each other
 
-			Rigidbody* bRb = m_Colliders[j]->GetRigidbody();
-			if (((aRb && !aRb->IsStatic()) || (bRb && !bRb->IsStatic())) &&
-				TestBoxBoxCollider(bounds, bounds2))
+			if (TestBoxBoxCollider(bounds, bounds2))
 				m_Collisions.emplace_back(CollisionFrame
 					{
 						m_Colliders[i],
-						aRb,
+						m_Colliders[i]->GetRigidbody(),
 						m_Colliders[j],
-						bRb
+						m_Colliders[j]->GetRigidbody()
 					});
 		}
 	}

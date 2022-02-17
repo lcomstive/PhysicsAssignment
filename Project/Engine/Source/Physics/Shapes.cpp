@@ -14,8 +14,8 @@ vec3 Engine::Physics::project(vec3& length, vec3& direction)
 }
 
 #pragma region AABB
-vec3 AABB::Min() { return Position - Extents; }
-vec3 AABB::Max() { return Position + Extents; }
+vec3 AABB::Min() { return Position - Extents / 2.0f; }
+vec3 AABB::Max() { return Position + Extents / 2.0f; }
 
 AABB AABB::FromMinMax(vec3 min, vec3 max)
 {
@@ -438,11 +438,12 @@ bool OBB::ClipToPlane(Plane& plane, Line& line, vec3* result)
 
 float OBB::PenetrationDepth(OBB& other, vec3& axis, bool* outShouldFlip)
 {
-	Interval i1 = GetInterval(normalize(axis));
-	Interval i2 = other.GetInterval(normalize(axis));
+	axis = normalize(axis);
+	Interval i1 = GetInterval(axis);
+	Interval i2 = other.GetInterval(axis);
 
 	if (!((i2.Min <= i1.Max) && (i1.Min <= i2.Max)))
-		return 0;
+		return 0; // No penetration
 
 	float len1 = i1.Max - i1.Min;
 	float len2 = i2.Max - i2.Min;

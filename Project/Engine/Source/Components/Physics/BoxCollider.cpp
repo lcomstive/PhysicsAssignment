@@ -7,6 +7,7 @@
 #include <Engine/Components/Physics/PlaneCollider.hpp>
 #include <Engine/Components/Physics/SphereCollider.hpp>
 
+using namespace std;
 using namespace glm;
 using namespace Engine::Physics;
 using namespace Engine::Graphics;
@@ -31,10 +32,22 @@ void BoxCollider::DrawGizmos()
 #ifndef NDEBUG
 	Transform* transform = GetTransform();
 	Gizmos::Colour = { 0, 1, 0, 1 };
+	/*
 	Gizmos::DrawWireCube(
 		m_Bounds.Position,
 		m_Bounds.Extents,
 		m_Bounds.Orientation);
+	*/
+
+	Gizmos::Colour = { 1, 0, 1, 0.75f };
+	vector<vec3>& vertices = m_Bounds.GetVertices();
+	for (vec3& vertex : vertices)
+		Gizmos::DrawSphere(vertex, 0.05f);
+
+	Gizmos::Colour = { 1, 1, 0, 0.75f };
+	vector<Line>& edges = m_Bounds.GetEdges();
+	for (Line& edge : edges)
+		Gizmos::DrawLine(edge.Start, edge.End);
 #endif
 }
 
