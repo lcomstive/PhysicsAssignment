@@ -50,7 +50,7 @@ namespace Engine::Physics
 		/// The larger the number, the less jitter in the system.
 		/// Range 0.01-0.1.
 		/// </summary>
-		float m_PenetrationSlack = 0.05f;
+		float m_PenetrationSlack = 0.02f;
 
 		Engine::Application* m_App;
 

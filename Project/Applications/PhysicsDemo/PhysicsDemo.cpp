@@ -103,7 +103,7 @@ void PhysicsDemo::OnStart()
 				rb->SetFriction(0.1f);
 				rb->SetRestitution(0.35f);
 
-				bool sphere = true; // rand() % 2 == 0;
+				bool sphere = rand() % 2 == 0;
 				if (sphere)
 				{
 					meshInfo.Mesh = Mesh::Sphere();
@@ -181,11 +181,11 @@ void PhysicsDemo::OnStart()
 #endif
 
 #if PARTICLE_DEMO
-	const float ParticleSize = 0.1f;
+	const float ParticleSize = 0.5f;
 #ifndef NDEBUG
-	const int ParticleTowerSize = 5;
+	const int ParticleTowerSize = 3;
 #else
-	const int ParticleTowerSize = 20;
+	const int ParticleTowerSize = 10;
 #endif
 	meshInfo.Mesh = Mesh::Sphere();
 	for (int x = 0; x < ParticleTowerSize; x++)
@@ -195,22 +195,45 @@ void PhysicsDemo::OnStart()
 			for (int z = 0; z < ParticleTowerSize; z++)
 			{
 				GameObject* go = new GameObject(CurrentScene(), "Particle (" + to_string(x) + ", " + to_string(y) + ", " + to_string(z) + ")");
-				go->GetTransform()->Position = vec3(x, y, z) * ParticleSize * 2.0f;
+				go->GetTransform()->Position = vec3(x, 3.0f + y, z) * ParticleSize * 2.5f;
 				go->GetTransform()->Scale = vec3(ParticleSize);
-				go->AddComponent<Particle>()->SetCollisionRadius(ParticleSize);
-				// go->AddComponent<Rigidbody>();				
+
+#if 1
+				go->AddComponent<Rigidbody>();
 				go->AddComponent<SphereCollider>()->SetRadius(ParticleSize);
+#else
+				go->AddComponent<Particle>()->SetCollisionRadius(ParticleSize);
+#endif
 
 				meshInfo.Material.Albedo = { Random(0.5f, 1.0f), Random(0.5f, 1.0f), Random(0.5f, 1.0f), 1.0f };
 				go->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+
+				TotalObjects++;
 			}
 		}
 	}
 
-	GameObject* obstacle = new GameObject(CurrentScene(), "Particle Obstacle");
-	obstacle->GetTransform()->Position.y = -ParticleTowerSize * ParticleSize * 2.1f;
-	obstacle->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
-	obstacle->AddComponent<SphereCollider>();
+	const int ObstacleWidth = 5;
+	const float ObstacleSize = 0.5f;
+	const float ObstacleSpacing = 1.5f;
+	meshInfo.Material.Albedo = { 1, 0, 0, 1 };
+	for (int x = 0; x < ObstacleWidth; x++)
+	{
+		for (int z = 0; z < ObstacleWidth; z++)
+		{
+			GameObject* obstacle = new GameObject(CurrentScene(), "Particle Obstacle");
+			obstacle->GetTransform()->Position = vec3
+			{
+				(x + ObstacleSize) * ObstacleSpacing,
+				2.0f,
+				(z + ObstacleSize) * ObstacleSpacing
+			};
+			obstacle->GetTransform()->Scale = vec3(ObstacleSize);
+			obstacle->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+			obstacle->AddComponent<SphereCollider>()->SetRadius(ObstacleSize);
+			obstacle->AddComponent<Rigidbody>()->SetStatic(true);
+		}
+	}
 #endif
 }
 
@@ -270,7 +293,7 @@ void PhysicsDemo::OnDraw()
 		ImGui::End();
 	}
 
-// #ifndef NDEBUG
+	// #ifndef NDEBUG
 	const ImVec4 ColourGood = { 1, 1, 1, 1 };
 	const ImVec4 ColourBad = { 1, 0, 0, 1 };
 
@@ -302,7 +325,7 @@ void PhysicsDemo::OnDraw()
 
 		ImGui::End();
 	}
-// #endif
+	// #endif
 
 #if ROPE_DEMO
 	static bool ropeWindowOpen = true;
@@ -322,7 +345,7 @@ void PhysicsDemo::OnDraw()
 				rope->SetRestingLength(RopeRestingLength);
 				rope->SetConstants(RopeStiffness, RopeDampingFactor);
 			}
-	}
+}
 #endif
 }
 
@@ -363,10 +386,10 @@ void PhysicsDemo::CreateWall(vec3 axis)
 
 void PhysicsDemo::CreateWalls()
 {
-	CreateWall(vec3 {  0,  1,  0 });
-	CreateWall(vec3 {  0, -1,  0 });
-	CreateWall(vec3 {  1,  0,  0 });
-	CreateWall(vec3 { -1,  0,  0 });
-	CreateWall(vec3 {  0,  0,  1 });
-	CreateWall(vec3 {  0,  0, -1 });
+	CreateWall(vec3{ 0,  1,  0 });
+	CreateWall(vec3{ 0, -1,  0 });
+	CreateWall(vec3{ 1,  0,  0 });
+	CreateWall(vec3{ -1,  0,  0 });
+	CreateWall(vec3{ 0,  0,  1 });
+	CreateWall(vec3{ 0,  0, -1 });
 }

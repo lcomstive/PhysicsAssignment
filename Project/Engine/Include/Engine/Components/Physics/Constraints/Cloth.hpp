@@ -12,7 +12,7 @@ namespace Engine::Components
 		Graphics::Mesh* m_Mesh;
 
 		unsigned int m_ClothSize;
-		std::vector<Particle*> m_Vertices;
+		std::vector<SPRING_PARTICLE_TYPE*> m_Vertices;
 		std::vector<Spring*> m_BendSprings;
 		std::vector<Spring*> m_ShearSprings;
 		std::vector<Spring*> m_StructuralSprings;

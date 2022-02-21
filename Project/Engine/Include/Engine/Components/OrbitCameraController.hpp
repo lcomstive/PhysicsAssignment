@@ -6,7 +6,7 @@ namespace Engine::Components
 {
 	class OrbitCameraController : public Component
 	{
-		Camera* m_Camera;
+		Camera* m_Camera = nullptr;
 
 		void Added();
 		void Update(float deltaTime);

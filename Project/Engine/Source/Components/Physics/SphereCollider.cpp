@@ -55,7 +55,7 @@ void SphereCollider::CalculateInverseTensor()
 	float mass = rb ? rb->GetMass() : 0.0f;
 	if (!rb || mass == 0.0f)
 	{
-		m_InverseTensor = inverse(mat4(0.0f));
+		m_InverseTensor = mat4(0.0f);
 		return;
 	}
 

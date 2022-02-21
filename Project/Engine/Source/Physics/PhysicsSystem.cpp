@@ -21,7 +21,7 @@ PhysicsSystem::PhysicsSystem(Application* app, milliseconds fixedTimestep) :
 	m_Substeps(5),
 	m_CollidersMutex(),
 	m_LastTimeStep(-1ms),
-	m_ImpulseIteration(10),
+	m_ImpulseIteration(1),
 	m_Broadphase(nullptr),
 	m_Gravity(InitialGravity),
 	m_FixedTimestep(fixedTimestep),
@@ -80,6 +80,7 @@ void PhysicsSystem::Pause()
 	m_ThreadState.store((int)(m_PhysicsState = PhysicsPlayState::Paused));
 	pauseConditional.notify_one();
 }
+
 void PhysicsSystem::TogglePause()
 {
 	if (m_PhysicsState == PhysicsPlayState::Playing)
@@ -130,6 +131,8 @@ void PhysicsSystem::RemovePhysicsComponent(PhysicsComponent* rb)
 
 void PhysicsSystem::PhysicsLoop()
 {
+	Log::Assert(m_Broadphase, "A broadphase is required! Use PhysicsSystem::SetBroadphase to set one");
+
 	PhysicsPlayState currentState;
 	while ((currentState = (PhysicsPlayState)m_ThreadState.load()) != PhysicsPlayState::Stopped)
 	{
@@ -138,8 +141,6 @@ void PhysicsSystem::PhysicsLoop()
 			unique_lock lock(m_PhysicsStateMutex);
 			pauseConditional.wait(lock, [&] { return m_PhysicsState != PhysicsPlayState::Paused; });
 		}
-
-		Log::Assert(m_Broadphase, "A broadphase is required! Use PhysicsSystem::SetBroadphase to set one");
 
 		time_point timeStart = high_resolution_clock::now();
 		float fixedTimestep = m_FixedTimestep.count() / 1000.0f;
@@ -183,16 +184,16 @@ void PhysicsSystem::PositionalCorrect()
 		if (collision.A->IsTrigger || collision.B->IsTrigger)
 			continue;
 
-		float totalMass = collision.ARigidbody->InverseMass() + (collision.BRigidbody ? collision.BRigidbody->InverseMass() : 0.0f);
+		float totalMass = (collision.ARigidbody ? collision.ARigidbody->InverseMass() : 0.0f) +
+			(collision.BRigidbody ? collision.BRigidbody->InverseMass() : 0.0f);
 		if (totalMass == 0.0f)
 			continue;
 
 		float depth = fmaxf(collision.Result.PenetrationDepth - m_PenetrationSlack, 0.0f);
 		vec3 correction = collision.Result.Normal * (depth / totalMass) * m_LinearProjectionPercent;
 
-		collision.A->GetTransform()->Position -= correction * collision.ARigidbody->InverseMass();
-		if(collision.BRigidbody)
-			collision.B->GetTransform()->Position += correction * collision.BRigidbody->InverseMass();
+		if (collision.ARigidbody) collision.A->GetTransform()->Position -= correction * collision.ARigidbody->InverseMass();
+		if (collision.BRigidbody) collision.B->GetTransform()->Position += correction * collision.BRigidbody->InverseMass();
 	}
 }
 
@@ -208,9 +209,9 @@ void PhysicsSystem::NarrowPhase()
 			continue;
 		}
 
-		if (!m_Collisions[i].ARigidbody || m_Collisions[i].ARigidbody->IsStatic())
+		if ((!m_Collisions[i].ARigidbody || m_Collisions[i].ARigidbody->IsStatic()) && m_Collisions[i].BRigidbody)
 		{
-			// A valid non-static rigidbody needs to be in A
+			// A valid non-static rigidbody is expected to be in A
 
 			Collider* temp = m_Collisions[i].A;
 			m_Collisions[i].A = m_Collisions[i].B;

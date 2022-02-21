@@ -15,11 +15,15 @@ using namespace Engine::Physics;
 using namespace Engine::Graphics;
 using namespace Engine::Components;
 
-float ClothStiffness[3]		= { 10.0f, 10.0f, 10.0f };
-float ClothDampingFactor[3] = {  0.1f,  0.1f,  0.1f };
-float ClothSpacing = 0.2f;
-int ClothSize = 10;
+float ClothStiffness = 100.0f;
+float ClothSpacing = 0.5f;
 vec3 ClothInitialPos = { 0, 7.5f, 0 };
+
+#ifndef NDEBUG
+int ClothSize = 10;
+#else
+int ClothSize = 20;
+#endif
 
 Cloth* m_Cloth = nullptr;
 
@@ -43,9 +47,9 @@ void ClothDemo::OnStart()
 	m_Cloth = clothObj->AddComponent<Cloth>();
 	m_Cloth->Initialize(ClothSize, ClothSpacing);
 
-	m_Cloth->SetStructuralSprings(ClothStiffness[0], ClothDampingFactor[0]);
-	m_Cloth->SetShearSprings(ClothStiffness[1], ClothDampingFactor[1]);
-	m_Cloth->SetBendSprings(ClothStiffness[2], ClothDampingFactor[2]);
+	m_Cloth->SetStructuralSprings(ClothStiffness, 0.0f);
+	m_Cloth->SetShearSprings(ClothStiffness, 0.0f);
+	m_Cloth->SetBendSprings(ClothStiffness, 0.0f);
 
 	// Create floor
 	MeshRenderer::MeshInfo meshInfo = { Mesh::Cube(), Material {} };
@@ -72,20 +76,18 @@ void ClothDemo::OnStart()
 		const float Scale = 1.0f;
 		obstacle->GetTransform()->Scale = vec3(Scale);
 
-		/*
 		if (Random(0.0f, 1.0f) > 0.5f)
 		{
 			obstacle->AddComponent<BoxCollider>();
 			obstacle->GetTransform()->Rotation =
 			{
-				Random(0.0f, 6.28319f),
-				Random(0.0f, 6.28319f),
-				Random(0.0f, 6.28319f)
+				Random(0.0f, radians(360.0f)),
+				Random(0.0f, radians(360.0f)),
+				Random(0.0f, radians(360.0f))
 			};
 			meshInfo.Mesh = Mesh::Cube();
 		}
 		else
-			*/
 		{
 			obstacle->AddComponent<SphereCollider>()->SetRadius(Scale);
 			meshInfo.Mesh = Mesh::Sphere();
@@ -162,36 +164,8 @@ void ClothDemo::OnDraw()
 	{
 		bool clothDirty = false;
 
-		if (ImGui::SliderFloat("Structural Stiffness", &ClothStiffness[0], 0.0f, 1000.0f))  clothDirty = true;
-		if (ImGui::SliderFloat("Structural Dampening", &ClothDampingFactor[0], 0.0f, 1.0f)) clothDirty = true;
-
-		if (clothDirty)
-		{
-			m_Cloth->SetStructuralSprings(ClothStiffness[0], ClothDampingFactor[0]);
-			clothDirty = false;
-		}
-		
-		ImGui::Spacing();
-
-		if (ImGui::SliderFloat("Shear Stiffness", &ClothStiffness[1], 0.0f, 1000.0f))  clothDirty = true;
-		if (ImGui::SliderFloat("Shear Dampening", &ClothDampingFactor[1], 0.0f, 1.0f)) clothDirty = true;
-
-		if (clothDirty)
-		{
-			m_Cloth->SetShearSprings(ClothStiffness[1], ClothDampingFactor[1]);
-			clothDirty = false;
-		}
-		
-		ImGui::Spacing();
-		
-		if (ImGui::SliderFloat("Bend Stiffness", &ClothStiffness[2], 0.0f, 1000.0f))  clothDirty = true;
-		if (ImGui::SliderFloat("Bend Dampening", &ClothDampingFactor[2], 0.0f, 1.0f)) clothDirty = true;
-
-		if (clothDirty)
-		{
-			m_Cloth->SetBendSprings(ClothStiffness[2], ClothDampingFactor[2]);
-			clothDirty = false;
-		}
+		if (ImGui::SliderFloat("Cloth Stiffness", &ClothStiffness, 0.0f, 1000.0f))
+			m_Cloth->SetBendSprings(ClothStiffness, 0.0f);
 	}
 	ImGui::End();
 }

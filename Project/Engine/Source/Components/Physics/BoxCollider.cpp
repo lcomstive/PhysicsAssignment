@@ -32,13 +32,12 @@ void BoxCollider::DrawGizmos()
 #ifndef NDEBUG
 	Transform* transform = GetTransform();
 	Gizmos::Colour = { 0, 1, 0, 1 };
-	/*
 	Gizmos::DrawWireCube(
 		m_Bounds.Position,
 		m_Bounds.Extents,
 		m_Bounds.Orientation);
-	*/
 
+	/*
 	Gizmos::Colour = { 1, 0, 1, 0.75f };
 	vector<vec3>& vertices = m_Bounds.GetVertices();
 	for (vec3& vertex : vertices)
@@ -48,6 +47,7 @@ void BoxCollider::DrawGizmos()
 	vector<Line>& edges = m_Bounds.GetEdges();
 	for (Line& edge : edges)
 		Gizmos::DrawLine(edge.Start, edge.End);
+	*/
 #endif
 }
 
@@ -63,7 +63,7 @@ void BoxCollider::SetExtents(glm::vec3 value)
 void BoxCollider::FixedUpdate(float timestep)
 {
 	Transform* transform = GetTransform();
-	m_Bounds.Position = transform->Position + Offset;
+	m_Bounds.Position = transform->GetGlobalPosition() + Offset;
 
 	vec3 rotation = transform->GetGlobalRotation();
 	m_Bounds.Orientation = eulerAngleXYZ(rotation.x, rotation.y, rotation.z);

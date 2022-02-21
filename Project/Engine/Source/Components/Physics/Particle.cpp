@@ -1,4 +1,5 @@
 #include <Engine/Scene.hpp>
+#include <Engine/Utilities.hpp>
 #include <Engine/GameObject.hpp>
 #include <Engine/Physics/PhysicsSystem.hpp>
 #include <Engine/Components/Physics/Particle.hpp>
@@ -26,7 +27,7 @@ PhysicsSystem& Particle::GetSystem() { return GetGameObject()->GetScene()->GetPh
 
 void Particle::ApplyForce(glm::vec3 force, ForceMode mode)
 {
-	if (IsStatic)
+	if (m_IsStatic)
 		return;
 
 	switch (mode)
@@ -50,6 +51,8 @@ float Particle::GetFriction() { return m_Friction; }
 void  Particle::SetFriction(float value) { m_Friction = value; }
 vec3  Particle::GetVelocity() { return m_Velocity; }
 void  Particle::SetCollisionRadius(float radius) { m_Collider->SetRadius(radius); }
+bool  Particle::IsStatic() { return m_IsStatic; }
+void  Particle::SetStatic(bool value) { m_IsStatic = value; }
 
 void Particle::Added()
 {
@@ -63,15 +66,15 @@ void Particle::Added()
 
 void Particle::FixedUpdate(float timestep)
 {
-	if (IsStatic)
+	if (m_IsStatic)
 		return;
 
 	Transform* transform = GetTransform();
-
 	m_PreviousPosition = transform->GetGlobalPosition();
 
 	vec3 acceleration = m_Force * InverseMass();
 	m_Velocity = m_Velocity * m_Friction + (acceleration * timestep);
+
 	transform->Position += m_Velocity * timestep;
 
 	m_Force = vec3(0.0f);
@@ -80,7 +83,7 @@ void Particle::FixedUpdate(float timestep)
 
 void Particle::SolveConstraints(float timestep)
 {
-	if (IsStatic)
+	if (m_IsStatic)
 		return;
 
 	Transform* transform = GetTransform();
@@ -100,7 +103,7 @@ void Particle::SolveConstraints(float timestep)
 	Collider* hitCollider = system.Raycast(ray, m_Collider, &hit);
 	if(hitCollider)
 	{
-		transform->Position = hit.Point + hit.Normal * 0.003f;
+		transform->Position = hit.Point + hit.Normal * 0.001f;
 		if (transform->GetParent())
 			transform->Position -= transform->GetParent()->GetGlobalPosition(); // Global -> Local
 

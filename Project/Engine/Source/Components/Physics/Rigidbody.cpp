@@ -36,6 +36,7 @@ void Rigidbody::SetStatic(bool isStatic) { m_IsStatic = isStatic; }
 vec3 Rigidbody::GetVelocity() { return m_Velocity; }
 
 float Rigidbody::InverseMass() { return (m_IsStatic || m_Mass <= 0.0f) ? 0.0f : (1.0f / m_Mass); }
+float Rigidbody::KineticEnergy() { return m_Mass * Magnitude(m_Velocity) * 0.5f; }
 float Rigidbody::PotentialEnergy() { return m_Mass * dot(GetSystem().GetGravity(), GetTransform()->Position); }
 
 const mat4 DefaultTensor = inverse(mat4(0.0f));
@@ -79,7 +80,7 @@ void Rigidbody::ApplyWorldForces(float timestep)
 
 void Rigidbody::CheckSleeping()
 {
-	m_Sleeping = MagnitudeSqr(m_Velocity) < InverseMass() &&
+	m_Sleeping = CanSleep && MagnitudeSqr(m_Velocity) < InverseMass() &&
 		MagnitudeSqr(m_AngularVelocity) < 0.005f;
 }
 
@@ -88,12 +89,12 @@ void Rigidbody::FixedUpdate(float timestep)
 	if(m_IsStatic)
 		return;
 	
-	const float damping = 0.98f;
+	const float damping = 0.95f;
 	Transform* transform = GetTransform();
 
 	// Linear motion
 	vec3 acceleration = m_Force * InverseMass();
-	m_Velocity += (acceleration * timestep) * damping;
+	m_Velocity = (acceleration * timestep) + m_Velocity * damping;
 
 	// Angular motion
 	vec3 angAccel = vec3(vec4(m_Torque, 1.0f) * InverseTensor());
@@ -192,8 +193,8 @@ void Rigidbody::ApplyImpulse(Collider* other, CollisionManifold manifold, int co
 		return;
 
 	// Contact points relative to center of mass
-	vec3 r1 = manifold.Contacts[contactIndex] - GetTransform()->Position;
-	vec3 r2 = manifold.Contacts[contactIndex] - other->GetTransform()->Position;
+	vec3 r1 = manifold.Contacts[contactIndex] - GetTransform()->GetGlobalPosition();
+	vec3 r2 = manifold.Contacts[contactIndex] - other->GetTransform()->GetGlobalPosition();
 
 	// Store inverse tensors
 	mat4& i1 = InverseTensor();

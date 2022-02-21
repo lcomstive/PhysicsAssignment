@@ -2,6 +2,7 @@
 #include <Engine/GameObject.hpp>
 #include <Engine/Graphics/Renderer.hpp>
 #include <Engine/Components/Transform.hpp>
+#include <Engine/Components/Physics/SphereCollider.hpp>
 #include <Engine/Components/Physics/Constraints/Cloth.hpp>
 
 using namespace std;
@@ -21,27 +22,35 @@ void Cloth::Initialize(unsigned int size, float distance)
 	m_Vertices.resize((size_t)(m_ClothSize * m_ClothSize));
 
 	// Create vertex particles w/ default values
-	for (int x = 0; x < m_ClothSize; x++)
+	for (unsigned int x = 0; x < m_ClothSize; x++)
 	{
-		for (int z = 0; z < m_ClothSize; z++)
+		for (unsigned int z = 0; z < m_ClothSize; z++)
 		{
 			int i = z * m_ClothSize + x;
 			float xPos = (x - (m_ClothSize / 2.0f)) * distance;
 			float zPos = (z - (m_ClothSize / 2.0f)) * distance;
 
-			m_Vertices[i] = (new GameObject(GetGameObject(), "Particle " + to_string(i)))->AddComponent<Particle>();
+			GameObject* go = new GameObject(GetGameObject(), "Particle " + to_string(i));
+			m_Vertices[i] = go->AddComponent<SPRING_PARTICLE_TYPE>();
 			m_Vertices[i]->GetTransform()->Position = { xPos, 0, zPos };
 			m_Vertices[i]->SetMass(1.0f);
 			m_Vertices[i]->SetRestitution(0.0f);
 			m_Vertices[i]->SetFriction(0.9f);
-			m_Vertices[i]->SetCollisionRadius(distance * 0.75f);
+
+#if SPRING_USE_RIGIDBODIES
+			// go->AddComponent<SphereCollider>()->SetRadius(distance * 0.5f);
+			go->AddComponent<SphereCollider>()->SetRadius(0.1f);
+#else
+			// m_Vertices[i]->SetCollisionRadius(distance * 0.5f);
+			m_Vertices[i]->SetCollisionRadius(0.1f);
+#endif
 		}
 	}
 
 	// Create left-to-right structural springs
-	for (int x = 0; x < m_ClothSize; x++)
+	for (unsigned int x = 0; x < m_ClothSize; x++)
 	{
-		for (int z = 0; z < m_ClothSize - 1; z++)
+		for (unsigned int z = 0; z < m_ClothSize - 1; z++)
 		{
 			int i = z * m_ClothSize + x;
 			int j = (z + 1) * m_ClothSize + x;
@@ -59,9 +68,9 @@ void Cloth::Initialize(unsigned int size, float distance)
 	}
 
 	// Create up-to-down structural springs
-	for (int x = 0; x < m_ClothSize - 1; x++)
+	for (unsigned int x = 0; x < m_ClothSize - 1; x++)
 	{
-		for (int z = 0; z < m_ClothSize; z++)
+		for (unsigned int z = 0; z < m_ClothSize; z++)
 		{
 			int i = z * m_ClothSize + x;
 			int j = z * m_ClothSize + (x + 1);
@@ -79,9 +88,9 @@ void Cloth::Initialize(unsigned int size, float distance)
 	}
 
 	// Create the left-to-right shear springs
-	for (int x = 0; x < m_ClothSize - 1; x++)
+	for (unsigned int x = 0; x < m_ClothSize - 1; x++)
 	{
-		for (int z = 0; z < m_ClothSize - 1; z++)
+		for (unsigned int z = 0; z < m_ClothSize - 1; z++)
 		{
 			int i = z * m_ClothSize + x;
 			int j = (z + 1) * m_ClothSize + (x + 1);
@@ -99,9 +108,9 @@ void Cloth::Initialize(unsigned int size, float distance)
 	}
 
 	// Create the up-to-down shear springs
-	for (int x = 1; x < m_ClothSize - 1; x++)
+	for (unsigned int x = 1; x < m_ClothSize - 1; x++)
 	{
-		for (int z = 0; z < m_ClothSize - 1; z++)
+		for (unsigned int z = 0; z < m_ClothSize - 1; z++)
 		{
 			int i = z * m_ClothSize + x;
 			int j = (z + 1) * m_ClothSize + (x - 1);
@@ -119,9 +128,9 @@ void Cloth::Initialize(unsigned int size, float distance)
 	}
 
 	// Create the left-to-right bend springs
-	for (int x = 0; x < m_ClothSize; x++)
+	for (unsigned int x = 0; x < m_ClothSize; x++)
 	{
-		for (int z = 0; z < m_ClothSize - 2; z++)
+		for (unsigned int z = 0; z < m_ClothSize - 2; z++)
 		{
 			int i = z * m_ClothSize + x;
 			int j = (z + 2) * m_ClothSize + x;
@@ -139,9 +148,9 @@ void Cloth::Initialize(unsigned int size, float distance)
 	}
 
 	// Create the up-to-down bend springs
-	for (int x = 0; x < m_ClothSize - 2; x++)
+	for (unsigned int x = 0; x < m_ClothSize - 2; x++)
 	{
-		for (int z = 0; z < m_ClothSize; z++)
+		for (unsigned int z = 0; z < m_ClothSize; z++)
 		{
 			int i = z * m_ClothSize + x;
 			int j = z * m_ClothSize + (x + 2);
@@ -160,9 +169,9 @@ void Cloth::Initialize(unsigned int size, float distance)
 
 	// Generate mesh data
 	vector<Mesh::Vertex> meshVerts;
-	for (int x = 0; x < m_ClothSize - 1; x++)
+	for (unsigned int x = 0; x < m_ClothSize - 1; x++)
 	{
-		for (int z = 0; z < m_ClothSize - 1; z++)
+		for (unsigned int z = 0; z < m_ClothSize - 1; z++)
 		{
 			int tl = z * m_ClothSize + x;
 			int bl = (z + 1) * m_ClothSize + x;
@@ -188,9 +197,9 @@ void Cloth::Clear()
 	m_ShearSprings.clear();
 	m_StructuralSprings.clear();
 
-	for (Particle* vertex : m_Vertices)
+	for (SPRING_PARTICLE_TYPE* vertex : m_Vertices)
 	{
-		vertex->GetGameObject()->RemoveComponent<Particle>();
+		vertex->GetGameObject()->RemoveComponent<SPRING_PARTICLE_TYPE>();
 		delete vertex->GetGameObject();
 	}
 	m_Vertices.clear();
@@ -243,7 +252,7 @@ void Cloth::SetShearSprings(float k, float b)
 
 void Cloth::SetParticleMass(float mass)
 {
-	for (Particle* particle : m_Vertices)
+	for (SPRING_PARTICLE_TYPE* particle : m_Vertices)
 		particle->SetMass(mass);
 }
 
@@ -254,9 +263,9 @@ void Cloth::Draw()
 
 	unsigned int i = 0;
 	auto& verts = m_Mesh->GetVertices();
-	for (int x = 0; x < m_ClothSize - 1; x++)
+	for (unsigned int x = 0; x < m_ClothSize - 1; x++)
 	{
-		for (int z = 0; z < m_ClothSize - 1; z++)
+		for (unsigned int z = 0; z < m_ClothSize - 1; z++)
 		{
 			int tl = z * m_ClothSize + x;
 			int bl = (z + 1) * m_ClothSize + x;

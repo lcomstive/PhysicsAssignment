@@ -34,6 +34,7 @@ namespace Engine::Components
 		void SetStatic(bool isStatic);
 
 		float InverseMass();
+		float KineticEnergy();
 		float PotentialEnergy();
 
 		glm::vec3 GetVelocity();

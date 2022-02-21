@@ -8,10 +8,10 @@ using namespace glm;
 using namespace Engine::Graphics;
 using namespace Engine::Components;
 
-Particle* Spring::GetPoint1() { return m_Point1; }
-Particle* Spring::GetPoint2() { return m_Point2; }
+SPRING_PARTICLE_TYPE* Spring::GetPoint1() { return m_Point1; }
+SPRING_PARTICLE_TYPE* Spring::GetPoint2() { return m_Point2; }
 
-void Spring::SetBodies(Particle* a, Particle* b)
+void Spring::SetBodies(SPRING_PARTICLE_TYPE* a, SPRING_PARTICLE_TYPE* b)
 {
 	m_Point1 = a;
 	m_Point2 = b;
@@ -35,6 +35,10 @@ void Spring::ApplyForces(float timestep)
 	vec3 direction = normalize(point1 - point2);
 
 	vec3 relVel = m_Point2->GetVelocity() - m_Point1->GetVelocity();
+
+#if SPRING_USE_RIGIDBODIES
+	relVel *= -1.0f; // Honestly not sure why
+#endif
 
 	vec3 force = direction * m_Stiffness * (m_RestingLength - length) - m_Dampening * relVel;
 

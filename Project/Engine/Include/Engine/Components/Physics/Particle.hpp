@@ -9,7 +9,6 @@ namespace Engine::Components
 
 	struct Particle : public PhysicsComponent
 	{
-		bool IsStatic = false;
 		bool UseGravity = true;
 		bool IsTrigger = false;
 
@@ -24,6 +23,9 @@ namespace Engine::Components
 
 		float GetFriction();
 		void  SetFriction(float value);
+
+		bool IsStatic();
+		void SetStatic(bool value);
 
 		glm::vec3 GetVelocity();
 
@@ -42,6 +44,7 @@ namespace Engine::Components
 
 	private:
 		float m_Radius;
+		bool m_IsStatic = false;
 		SphereCollider* m_Collider;
 
 		glm::vec3 m_Force, m_Velocity;

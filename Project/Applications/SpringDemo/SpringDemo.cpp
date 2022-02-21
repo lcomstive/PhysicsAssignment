@@ -26,7 +26,8 @@ SpringDemo::SpringDemo(ApplicationArgs args) : Application(args) { }
 Mesh* gridMesh = nullptr;
 const int GridSize = 250;
 
-Spring* DemoSpring = nullptr;
+Spring* DemoSpring1 = nullptr;
+Spring* DemoSpring2 = nullptr;
 
 float SpringStiffness = 10.0f;
 float SpringRestingLength = 1.0f;
@@ -34,6 +35,7 @@ float SpringDampingFactor = 0.5f;
 
 GameObject* PointA = nullptr;
 GameObject* PointB = nullptr;
+GameObject* PointC = nullptr;
 
 unsigned int TotalObjects = 0;
 void SpringDemo::OnStart()
@@ -56,24 +58,37 @@ void SpringDemo::OnStart()
 
 	// Create spring points
 	PointA = new GameObject(CurrentScene(), "Spring Point A");
-	Particle* particleA = PointA->AddComponent<Particle>();
-	particleA->IsStatic = true;
+	SPRING_PARTICLE_TYPE* particleA = PointA->AddComponent<SPRING_PARTICLE_TYPE>();
+	particleA->SetStatic(true);
 	
 	PointA->GetTransform()->Position = { 0, 2, 0 };
 	PointA->GetTransform()->Scale = vec3(0.2f);
 	PointA->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 
 	PointB = new GameObject(CurrentScene(), "Spring Point B");
-	Particle* particleB = PointB->AddComponent<Particle>();
+	SPRING_PARTICLE_TYPE* particleB = PointB->AddComponent<SPRING_PARTICLE_TYPE>();
 	PointB->GetTransform()->Position = { 1, 0.5f, 0 };
 	PointB->GetTransform()->Scale = vec3(0.2f);
 	PointB->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 
-	// Create spring
-	DemoSpring = PointA->AddComponent<Spring>();
-	DemoSpring->SetRestingLength(SpringRestingLength);
-	DemoSpring->SetConstants(SpringStiffness, SpringDampingFactor);
-	DemoSpring->SetBodies(particleA, particleB);
+	PointC = new GameObject(CurrentScene(), "Spring Point C");
+	SPRING_PARTICLE_TYPE* particleC = PointC->AddComponent<SPRING_PARTICLE_TYPE>();
+	PointC->GetTransform()->Position = { -1, 0.5f, 0 };
+	PointC->GetTransform()->Scale = vec3(0.2f);
+	PointC->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+
+	// Create springs
+	DemoSpring1 = PointA->AddComponent<Spring>();
+	DemoSpring1->SetRestingLength(SpringRestingLength);
+	DemoSpring1->SetConstants(SpringStiffness, SpringDampingFactor);
+	DemoSpring1->SetBodies(particleA, particleB);
+	
+	DemoSpring2 = PointC->AddComponent<Spring>();
+	DemoSpring2->SetRestingLength(SpringRestingLength);
+	DemoSpring2->SetConstants(SpringStiffness, SpringDampingFactor);
+	DemoSpring2->SetBodies(particleA, particleC);
+
+	CurrentScene()->GetPhysics().Pause();
 }
 
 void SpringDemo::OnShutdown() { delete gridMesh; }
@@ -118,11 +133,11 @@ void SpringDemo::OnDraw()
 	if (ImGui::Begin("Spring Demo", &springWindowOpen))
 	{
 		if (ImGui::SliderFloat("Stiffness", &SpringStiffness, 0.0f, 1000.0f))
-			DemoSpring->SetConstants(SpringStiffness, SpringDampingFactor);
+			DemoSpring1->SetConstants(SpringStiffness, SpringDampingFactor);
 		if (ImGui::SliderFloat("Dampening", &SpringDampingFactor, 0.0f, 1.0f))
-			DemoSpring->SetConstants(SpringStiffness, SpringDampingFactor);
+			DemoSpring1->SetConstants(SpringStiffness, SpringDampingFactor);
 		if (ImGui::SliderFloat("Resting Length", &SpringRestingLength, 0.1f, 10.0f))
-			DemoSpring->SetRestingLength(SpringRestingLength);
+			DemoSpring1->SetRestingLength(SpringRestingLength);
 
 		ImGui::End();
 	}

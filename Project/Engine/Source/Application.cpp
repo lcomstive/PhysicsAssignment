@@ -47,6 +47,8 @@ void Application::Run()
 	Renderer::s_Resolution = m_Args.Resolution;
 
 	CreateAppWindow();
+	m_Scene.GetPhysics().Start();
+
 	OnStart();
 
 	Renderer::SetPipeline<Pipelines::ForwardRenderPipeline>();
@@ -61,7 +63,6 @@ void Application::Run()
 	float frameCountTime = 0; // How long since the last second has passed
 	float frameStartTime = (Renderer::s_Time = (float)glfwGetTime()); // Game time at start of frame
 
-	m_Scene.GetPhysics().Start();
 	while (!glfwWindowShouldClose(m_Window))
 	{
 		m_Scene.Update((float)Renderer::s_DeltaTime);

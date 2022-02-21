@@ -27,7 +27,7 @@ namespace Engine::Components
 
 	private:
 		float m_Radius = 1.0f;
-		glm::mat4 m_InverseTensor;
+		glm::mat4 m_InverseTensor = glm::mat4(0.0f);
 
 		Physics::OBB m_Bounds;
 		Physics::Sphere m_Sphere;

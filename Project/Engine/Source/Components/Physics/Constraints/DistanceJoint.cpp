@@ -26,8 +26,8 @@ void DistanceJoint::SolveConstraints(float timestep)
 	float distance = Magnitude(delta);
 	float correction = (distance - m_Length) / distance;
 
-	if(!m_Body1->IsStatic) tA->Position += delta * (m_Body2->IsStatic ? 1.0f : 0.5f) * correction;
-	if(!m_Body2->IsStatic) tB->Position -= delta * (m_Body1->IsStatic ? 1.0f : 0.5f) * correction;
+	if(!m_Body1->IsStatic()) tA->Position += delta * (m_Body2->IsStatic() ? 1.0f : 0.5f) * correction;
+	if(!m_Body2->IsStatic()) tB->Position -= delta * (m_Body1->IsStatic() ? 1.0f : 0.5f) * correction;
 
 	// Try to prevent tunnelling
 	m_Body1->SolveConstraints(timestep);
