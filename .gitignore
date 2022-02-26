@@ -53,3 +53,6 @@ Release/
 [Bb]uilds/
 [Ll]ogs/
 [Uu]ser[Ss]ettings/
+
+# Microsoft Word autosave
+~$*
