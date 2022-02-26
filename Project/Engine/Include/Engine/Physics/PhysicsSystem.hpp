@@ -27,12 +27,12 @@ namespace Engine::Physics
 		std::mutex m_CollidersMutex;
 		std::mutex m_PhysicsStateMutex;
 		std::atomic_int m_ThreadState; // Corresponds to ThreadState
-		std::condition_variable pauseConditional; // Notifies thread when to unpause
+		std::condition_variable m_PauseConditional; // Notifies thread when to unpause
 
 		Broadphase* m_Broadphase;
 		PhysicsPlayState m_PhysicsState;
 		glm::vec3 m_Gravity = { 0, -9.81f, 0 };
-		std::chrono::milliseconds m_LastTimeStep;
+		std::chrono::milliseconds m_LastTimestep;
 		std::chrono::milliseconds m_FixedTimestep;
 		std::vector<CollisionFrame> m_Collisions;
 		std::vector<Components::Collider*> m_Colliders;
@@ -82,13 +82,8 @@ namespace Engine::Physics
 		/// </summary>
 		int m_Substeps;
 
-		/// <summary>
-		/// Maximum depth of acceleration octree
-		/// </summary>
-		unsigned int m_MaxOctreeRecursions = 5;
-
 	public:
-		PhysicsSystem(Engine::Application* app, std::chrono::milliseconds fixedTimeStep = 50ms);
+		PhysicsSystem(Engine::Application* app, std::chrono::milliseconds fixedTimestep = 50ms);
 		~PhysicsSystem();
 
 		void Start();
@@ -101,7 +96,7 @@ namespace Engine::Physics
 		void TogglePause();
 
 		std::chrono::milliseconds Timestep();
-		std::chrono::milliseconds LastTimeStep();
+		std::chrono::milliseconds LastTimestep();
 		void SetTimestep(std::chrono::milliseconds timestep);
 
 		void SetGravity(glm::vec3 gravity);

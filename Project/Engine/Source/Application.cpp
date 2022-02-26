@@ -3,6 +3,7 @@
 #include <Engine/Components/Camera.hpp>
 #include <Engine/Graphics/Renderer.hpp>
 #include <Engine/Graphics/Pipelines/Forward.hpp>
+#include <Engine/Graphics/Pipelines/Deferred.hpp>
 
 #include <imgui.h>
 #include <glad/glad.h>
@@ -52,6 +53,8 @@ void Application::Run()
 	OnStart();
 
 	Renderer::SetPipeline<Pipelines::ForwardRenderPipeline>();
+	// Renderer::SetPipeline<Pipelines::DeferredRenderPipeline>(); // HAVEN'T FIGURED OUT GIZMOS W/ DEFERRED
+
 	Renderer::Resized(m_Args.Resolution);
 	
 	SetupGizmos();
@@ -84,7 +87,8 @@ void Application::Run()
 		m_Scene.Draw();
 		OnDraw();
 
-		Renderer::GetPipeline()->Draw(Camera::GetMainCamera());
+		if(Camera::GetMainCamera())
+			Renderer::GetPipeline()->Draw(*Camera::GetMainCamera());
 
 		ImGui::Render(); // Draw ImGUI result
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

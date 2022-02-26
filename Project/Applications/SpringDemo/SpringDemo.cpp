@@ -29,9 +29,9 @@ const int GridSize = 250;
 Spring* DemoSpring1 = nullptr;
 Spring* DemoSpring2 = nullptr;
 
-float SpringStiffness = 10.0f;
-float SpringRestingLength = 1.0f;
-float SpringDampingFactor = 0.5f;
+float SpringStiffness[2] = { 10.0f, 10.0f };
+float SpringRestingLength[2] = { 1.0f, 1.0f };
+float SpringDampingFactor[2] = { 0.5f, 0.5f };
 
 GameObject* PointA = nullptr;
 GameObject* PointB = nullptr;
@@ -68,27 +68,25 @@ void SpringDemo::OnStart()
 	PointB = new GameObject(CurrentScene(), "Spring Point B");
 	SPRING_PARTICLE_TYPE* particleB = PointB->AddComponent<SPRING_PARTICLE_TYPE>();
 	PointB->GetTransform()->Position = { 1, 0.5f, 0 };
-	PointB->GetTransform()->Scale = vec3(0.2f);
+	PointB->GetTransform()->Scale = vec3(0.1f);
 	PointB->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 
 	PointC = new GameObject(CurrentScene(), "Spring Point C");
 	SPRING_PARTICLE_TYPE* particleC = PointC->AddComponent<SPRING_PARTICLE_TYPE>();
 	PointC->GetTransform()->Position = { -1, 0.5f, 0 };
-	PointC->GetTransform()->Scale = vec3(0.2f);
+	PointC->GetTransform()->Scale = vec3(0.1f);
 	PointC->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 
 	// Create springs
 	DemoSpring1 = PointA->AddComponent<Spring>();
-	DemoSpring1->SetRestingLength(SpringRestingLength);
-	DemoSpring1->SetConstants(SpringStiffness, SpringDampingFactor);
+	DemoSpring1->SetRestingLength(SpringRestingLength[0]);
+	DemoSpring1->SetConstants(SpringStiffness[0], SpringDampingFactor[0]);
 	DemoSpring1->SetBodies(particleA, particleB);
 	
 	DemoSpring2 = PointC->AddComponent<Spring>();
-	DemoSpring2->SetRestingLength(SpringRestingLength);
-	DemoSpring2->SetConstants(SpringStiffness, SpringDampingFactor);
+	DemoSpring2->SetRestingLength(SpringRestingLength[1]);
+	DemoSpring2->SetConstants(SpringStiffness[1], SpringDampingFactor[1]);
 	DemoSpring2->SetBodies(particleA, particleC);
-
-	CurrentScene()->GetPhysics().Pause();
 }
 
 void SpringDemo::OnShutdown() { delete gridMesh; }
@@ -126,18 +124,29 @@ void SpringDemo::OnDraw()
 		ImGui::Text("Right Mouse: Hold and move mouse to look around");
 		ImGui::Text("F:           Applies force at blue box position");
 		ImGui::Text("F11:         Toggle fullscreen");
+		
+		if (CurrentScene()->GetPhysics().GetState() == PhysicsPlayState::Paused)
+			ImGui::Text("PHYSICS PAUSED");
+		
 		ImGui::End();
 	}
 
 	static bool springWindowOpen = true;
 	if (ImGui::Begin("Spring Demo", &springWindowOpen))
 	{
-		if (ImGui::SliderFloat("Stiffness", &SpringStiffness, 0.0f, 1000.0f))
-			DemoSpring1->SetConstants(SpringStiffness, SpringDampingFactor);
-		if (ImGui::SliderFloat("Dampening", &SpringDampingFactor, 0.0f, 1.0f))
-			DemoSpring1->SetConstants(SpringStiffness, SpringDampingFactor);
-		if (ImGui::SliderFloat("Resting Length", &SpringRestingLength, 0.1f, 10.0f))
-			DemoSpring1->SetRestingLength(SpringRestingLength);
+		if (ImGui::SliderFloat("Stiffness 1", &SpringStiffness[0], 0.0f, 1000.0f))
+			DemoSpring1->SetConstants(SpringStiffness[0], SpringDampingFactor[0]);
+		if (ImGui::SliderFloat("Dampening 1", &SpringDampingFactor[0], 0.0f, 1.0f))
+			DemoSpring1->SetConstants(SpringStiffness[0], SpringDampingFactor[0]);
+		if (ImGui::SliderFloat("Resting Length 1", &SpringRestingLength[0], 0.1f, 10.0f))
+			DemoSpring1->SetRestingLength(SpringRestingLength[0]);
+		
+		if (ImGui::SliderFloat("Stiffness 2", &SpringStiffness[1], 0.0f, 1000.0f))
+			DemoSpring2->SetConstants(SpringStiffness[1], SpringDampingFactor[1]);
+		if (ImGui::SliderFloat("Dampening 2", &SpringDampingFactor[1], 0.0f, 1.0f))
+			DemoSpring2->SetConstants(SpringStiffness[1], SpringDampingFactor[1]);
+		if (ImGui::SliderFloat("Resting Length 2", &SpringRestingLength[1], 0.1f, 10.0f))
+			DemoSpring2->SetRestingLength(SpringRestingLength[1]);
 
 		ImGui::End();
 	}

@@ -15,7 +15,7 @@ namespace Engine::Graphics
 	public:
 		static glm::vec4 Colour;
 
-		static void Draw(Mesh* gridMesh, glm::vec3 position = { 0, 0, 0 }, glm::vec3 scale = { 1, 1, 1 }, glm::vec3 rotation = { 0, 0, 0 });
+		static void Draw(Mesh* mesh, glm::vec3 position = { 0, 0, 0 }, glm::vec3 scale = { 1, 1, 1 }, glm::vec3 rotation = { 0, 0, 0 });
 		
 		static void DrawGrid(glm::vec3 position, unsigned int gridSize, glm::vec3 scale = { 1, 1, 1 }, glm::vec3 rotation = { 0, 0, 0 });
 

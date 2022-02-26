@@ -20,7 +20,7 @@ void Collider::Removed()
 	GetGameObject()->GetScene()->GetPhysics().RemoveCollider(this);
 }
 
-mat4& Collider::InverseTensor() { return m_InverseTensor; }
+mat4& Collider::InverseTensor() { return m_DefaultInverseTensor; }
 
 void Collider::ProcessTriggerEntries()
 {

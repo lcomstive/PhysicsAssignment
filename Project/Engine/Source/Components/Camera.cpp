@@ -16,7 +16,13 @@ Camera* Camera::s_MainCamera = nullptr;
 
 const vec3 WorldUp = { 0, 1, 0 };
 
-Camera::Camera()
+Camera::Camera() :
+	m_Up(0, 1, 0),
+	m_Right(1, 0, 0),
+	m_Forward(0, 0, 1),
+	m_ViewMatrix(1.0f),
+	m_GlobalPosition(0),
+	m_ProjectionMatrix(1.0f)
 {
 	if (!s_MainCamera)
 		SetMainCamera();
@@ -25,20 +31,47 @@ Camera::Camera()
 void Camera::SetMainCamera() { s_MainCamera = this; }
 Camera* Camera::GetMainCamera() { return s_MainCamera; }
 
-mat4 Camera::GetViewMatrix()
+mat4 Camera::GetViewMatrix() { return m_ViewMatrix; }
+mat4 Camera::GetProjectionMatrix() { return m_ProjectionMatrix; }
+
+void Camera::FillShader(Shader* shader)
 {
-	Transform* transform = GetTransform();
-	
-	vec3 forward = GetForwardDirection();
-
-	vec3 right = normalize(cross(forward, WorldUp));
-	vec3 up = normalize(cross(right, forward));
-
-	return lookAt(transform->Position, transform->Position + forward, up);
+	shader->Set("camera.Position", m_GlobalPosition);
+	shader->Set("camera.ViewMatrix", GetViewMatrix());
+	shader->Set("camera.ProjectionMatrix", GetProjectionMatrix());
 }
 
-mat4 Camera::GetProjectionMatrix()
+vec3 Camera::GetUpDirection() { return m_Up; }
+vec3 Camera::GetRightDirection() { return m_Right; }
+vec3 Camera::GetForwardDirection() { return m_Forward; }
+
+void Camera::Removed()
 {
+	Component::Removed();
+	if (s_MainCamera == this)
+		s_MainCamera = nullptr;
+}
+
+void Camera::Update(float deltaTime)
+{
+	Transform* transform = GetTransform();
+
+	m_GlobalPosition = transform->GetGlobalPosition();
+
+	m_Forward = normalize(vec3
+		{
+			cos(transform->Rotation.y) * cos(transform->Rotation.x),
+			sin(transform->Rotation.x),
+			sin(transform->Rotation.y) * cos(transform->Rotation.x)
+		});
+
+	m_Right = normalize(cross(m_Forward, WorldUp));
+	m_Up = normalize(cross(m_Right, m_Forward));
+
+	// Create view matrix
+	m_ViewMatrix = lookAt(transform->Position, transform->Position + m_Forward, m_Up);
+
+	// Create projection matrix
 	ivec2 res = Renderer::GetResolution();
 	res.x = max(res.x, 1);
 	res.y = max(res.y, 1);
@@ -48,29 +81,8 @@ mat4 Camera::GetProjectionMatrix()
 		float width = OrthoSize * aspectRatio;
 		float height = OrthoSize;
 
-		return ortho(-width, width, -height, height, ClipNear, ClipFar);
+		m_ProjectionMatrix = ortho(-width, width, -height, height, ClipNear, ClipFar);
 	}
 	else
-		return perspective(radians(FieldOfView), aspectRatio, ClipNear, ClipFar);
-}
-
-void Camera::FillShader(Shader* shader)
-{
-	shader->Set("camera.ViewMatrix", GetViewMatrix());
-	shader->Set("camera.ProjectionMatrix", GetProjectionMatrix());
-	shader->Set("camera.Position", GetTransform()->GetGlobalPosition());
-}
-
-vec3 Camera::GetRightDirection() { return normalize(cross(GetForwardDirection(), WorldUp)); }
-vec3 Camera::GetUpDirection() { return normalize(cross(GetRightDirection(), GetForwardDirection())); }
-
-vec3 Camera::GetForwardDirection()
-{
-	Transform* transform = GetTransform();
-	return normalize(vec3
-	{
-		cos(transform->Rotation.y) * cos(transform->Rotation.x),
-		sin(transform->Rotation.x),
-		sin(transform->Rotation.y) * cos(transform->Rotation.x)
-	});
+		m_ProjectionMatrix = perspective(radians(FieldOfView), aspectRatio, ClipNear, ClipFar);
 }

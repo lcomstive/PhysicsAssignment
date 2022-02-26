@@ -123,7 +123,7 @@ void ClothDemo::OnDraw()
 	if (ImGui::Begin("Debugging", &debugWindowOpen))
 	{
 		float frameTime = Renderer::GetDeltaTime() * 1000.0f;
-		float lastTimeStep = physicsSystem.LastTimeStep().count();
+		float lastTimeStep = physicsSystem.LastTimestep().count();
 		float desiredTimestep = physicsSystem.Timestep().count();
 
 		ImGui::Text("FPS: %f\n", Renderer::GetFPS());

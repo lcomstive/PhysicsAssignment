@@ -44,6 +44,31 @@ void Transform::AddChild(Transform* child)
 	child->m_Parent = this;
 }
 
+void Transform::RemoveChild(Transform* child)
+{
+	const auto& it = find(m_Children.begin(), m_Children.end(), child);
+	if (it != m_Children.end())
+	{
+		m_Children.erase(it);
+		child->m_Parent = nullptr;
+	}
+}
+
+void Transform::RemoveChild(unsigned int index)
+{
+	if (index >= (unsigned int)m_Children.size())
+		return;
+	m_Children[index]->m_Parent = nullptr;
+	m_Children.erase(m_Children.begin() + index);
+}
+
+void Transform::ClearChildren()
+{
+	for (Transform* child : m_Children)
+		child->m_Parent = nullptr;
+	m_Children.clear();
+}
+
 void Transform::SetParent(Transform* parent)
 {
 	if (this == parent)

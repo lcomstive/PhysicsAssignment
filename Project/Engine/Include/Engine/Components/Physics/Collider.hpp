@@ -55,7 +55,7 @@ namespace Engine::Components
 		/// </summary>
 		std::vector<Collider*> m_PreviousTriggerEntries;
 
-		glm::mat4 m_InverseTensor = glm::mat4(0.0f);
+		glm::mat4 m_DefaultInverseTensor = glm::mat4(0.0f);
 
 		void ProcessTriggerEntries();
 

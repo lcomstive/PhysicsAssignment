@@ -29,7 +29,7 @@ namespace Engine
 		Scene* GetScene();
 		std::string GetName();
 		void SetName(std::string name);
-		Engine::Components::Transform* GetTransform();
+		Components::Transform* GetTransform();
 
 		/// <summary>
 		/// Attaches a component onto a GameObject, or returns existing one if found

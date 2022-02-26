@@ -15,6 +15,7 @@ GLenum Engine::Graphics::GetTextureTarget(TextureFormat target, bool multisample
 		return GL_INVALID_ENUM;
 	case TextureFormat::RedInteger:
 		return GL_TEXTURE_1D;
+	case TextureFormat::RGB8:
 	case TextureFormat::RGBA8:
 	case TextureFormat::RGBA16:
 	case TextureFormat::RGBA16F:
@@ -31,6 +32,7 @@ GLenum Engine::Graphics::TextureFormatToInternalGLFormat(TextureFormat format)
 	switch (format)
 	{
 	default: return GL_INVALID_ENUM;
+	case TextureFormat::RGB8:		return GL_RGB8;
 	case TextureFormat::RGBA8:		return GL_RGBA8;
 	case TextureFormat::RGBA16:		return GL_RGBA16;
 	case TextureFormat::RGBA16F:	return GL_RGBA16F;
@@ -44,6 +46,7 @@ GLenum Engine::Graphics::TextureFormatToGLFormat(TextureFormat format)
 	switch (format)
 	{
 	default: return GL_INVALID_ENUM;
+	case TextureFormat::RGB8:			 return GL_RGB;
 	case TextureFormat::RGBA8:
 	case TextureFormat::RGBA16F:		 return GL_RGBA;
 	case TextureFormat::RedInteger:		 return GL_RED_INTEGER;
@@ -181,6 +184,7 @@ void RenderTexture::CreateColourTexture()
 
 	switch (m_Format)
 	{
+	case TextureFormat::RGB8:
 	case TextureFormat::RGBA8:
 	case TextureFormat::RGBA16:
 	case TextureFormat::RGBA16F:

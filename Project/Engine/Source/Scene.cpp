@@ -13,6 +13,8 @@ PhysicsSystem& Scene::GetPhysics() { return m_Physics; }
 void Scene::Draw() { m_Root.Draw(); }
 void Scene::Update(float deltaTime) { m_Root.Update(deltaTime); }
 
+void Scene::Clear() { m_Root.GetTransform()->ClearChildren(); }
+
 void Scene::DrawGizmos()
 {
 	m_Root.DrawGizmos();

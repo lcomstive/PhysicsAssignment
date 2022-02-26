@@ -8,6 +8,7 @@ namespace Engine::Graphics
 		None = 0,
 
 		// Colour
+		RGB8,
 		RGBA8,
 		RGBA16,
 		RGBA16F,

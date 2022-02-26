@@ -22,12 +22,13 @@ GameObject::GameObject(GameObject* parent, string name) : m_Name(name), m_Compon
 }
 
 GameObject::~GameObject()
-{
+{	
 	for (auto& pair : m_Components)
 	{
 		pair.second->Removed();
 		delete pair.second;
 	}
+	m_Transform = nullptr;
 	m_Components.clear();
 }
 

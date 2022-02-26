@@ -9,6 +9,12 @@ struct Light
 	float Radius;
 };
 
+struct DirectionalLight
+{
+	vec3 Direction;
+	vec3 Colour;
+};
+
 uniform int lightCount = 0;
 uniform Light lights[MAX_LIGHTS];
 uniform vec3 ambientLighting = vec3(0.1, 0.1, 0.1);

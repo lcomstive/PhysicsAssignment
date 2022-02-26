@@ -13,6 +13,7 @@ class PhysicsDemo : public Engine::Application
 
 	void CreateWall(glm::vec3 axis);
 	void CreateWalls();
+	void ResetScene();
 
 public:
 	PhysicsDemo(Engine::ApplicationArgs args);

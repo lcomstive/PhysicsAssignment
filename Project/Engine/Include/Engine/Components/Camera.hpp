@@ -21,17 +21,25 @@ namespace Engine::Components
 		Graphics::RenderTexture* RenderTarget = nullptr;
 
 		glm::mat4 GetViewMatrix();
-		void FillShader(Graphics::Shader* shader);
-
 		glm::vec3 GetUpDirection();
 		glm::vec3 GetRightDirection();
 		glm::vec3 GetForwardDirection();
 		glm::mat4 GetProjectionMatrix();
 		
+		void FillShader(Graphics::Shader* shader);
+
 		void SetMainCamera();
 		static Camera* GetMainCamera();
 
+	protected:
+		virtual void Removed() override;
+		virtual void Update(float deltaTime) override;
+
 	private:
+		glm::mat4 m_ViewMatrix;
+		glm::mat4 m_ProjectionMatrix;
+		glm::vec3 m_GlobalPosition, m_Forward, m_Right, m_Up;
+
 		static Camera* s_MainCamera;
 	};
 }

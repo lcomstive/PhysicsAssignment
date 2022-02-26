@@ -24,7 +24,7 @@ namespace Engine::Graphics
 		std::vector<RenderPipelinePass> m_RenderPasses;
 
 	public:
-		void Draw(Engine::Components::Camera* camera);
+		void Draw(Engine::Components::Camera& camera);
 
 		/// <returns>The texture of the last render pass' output</returns>
 		RenderTexture* GetOutputAttachment(unsigned int index = 0);

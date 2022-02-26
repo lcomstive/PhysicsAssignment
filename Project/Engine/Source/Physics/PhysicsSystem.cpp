@@ -20,7 +20,7 @@ PhysicsSystem::PhysicsSystem(Application* app, milliseconds fixedTimestep) :
 	m_Thread(),
 	m_Substeps(5),
 	m_CollidersMutex(),
-	m_LastTimeStep(-1ms),
+	m_LastTimestep(-1ms),
 	m_ImpulseIteration(1),
 	m_Broadphase(nullptr),
 	m_Gravity(InitialGravity),
@@ -49,7 +49,7 @@ void PhysicsSystem::SetGravity(vec3 gravity)
 }
 
 glm::vec3 PhysicsSystem::GetGravity() { return m_Gravity; }
-std::chrono::milliseconds PhysicsSystem::LastTimeStep() { return m_LastTimeStep; }
+std::chrono::milliseconds PhysicsSystem::LastTimestep() { return m_LastTimestep; }
 milliseconds PhysicsSystem::Timestep() { return m_FixedTimestep; }
 
 void PhysicsSystem::Start()
@@ -61,7 +61,7 @@ void PhysicsSystem::Start()
 void PhysicsSystem::Stop()
 {
 	m_ThreadState.store((int)(m_PhysicsState = PhysicsPlayState::Stopped));
-	pauseConditional.notify_one();
+	m_PauseConditional.notify_one();
 
 	if (m_Thread.joinable())
 		m_Thread.join();
@@ -71,14 +71,14 @@ void PhysicsSystem::Resume()
 {
 	lock_guard lock(m_PhysicsStateMutex);
 	m_ThreadState.store((int)(m_PhysicsState = PhysicsPlayState::Playing));
-	pauseConditional.notify_one();
+	m_PauseConditional.notify_one();
 }
 
 void PhysicsSystem::Pause()
 {
 	lock_guard lock(m_PhysicsStateMutex);
 	m_ThreadState.store((int)(m_PhysicsState = PhysicsPlayState::Paused));
-	pauseConditional.notify_one();
+	m_PauseConditional.notify_one();
 }
 
 void PhysicsSystem::TogglePause()
@@ -139,7 +139,7 @@ void PhysicsSystem::PhysicsLoop()
 		if (currentState == PhysicsPlayState::Paused)
 		{
 			unique_lock lock(m_PhysicsStateMutex);
-			pauseConditional.wait(lock, [&] { return m_PhysicsState != PhysicsPlayState::Paused; });
+			m_PauseConditional.wait(lock, [&] { return m_PhysicsState != PhysicsPlayState::Paused; });
 		}
 
 		time_point timeStart = high_resolution_clock::now();
@@ -166,8 +166,8 @@ void PhysicsSystem::PhysicsLoop()
 		for (PhysicsComponent* component : m_Components)
 			component->SolveConstraints(fixedTimestep);
 
-		m_LastTimeStep = duration_cast<milliseconds>(high_resolution_clock::now() - timeStart);
-		milliseconds remainingTime = m_FixedTimestep - m_LastTimeStep;
+		m_LastTimestep = duration_cast<milliseconds>(high_resolution_clock::now() - timeStart);
+		milliseconds remainingTime = m_FixedTimestep - m_LastTimestep;
 
 		if (remainingTime.count() > 0)
 			this_thread::sleep_for(remainingTime);

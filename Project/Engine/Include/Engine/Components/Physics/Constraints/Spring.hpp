@@ -28,8 +28,8 @@ namespace Engine::Components
 		void DrawGizmos() override;
 
 	protected:
-		SPRING_PARTICLE_TYPE* m_Point1;
-		SPRING_PARTICLE_TYPE* m_Point2;
+		SPRING_PARTICLE_TYPE* m_Point1 = nullptr;
+		SPRING_PARTICLE_TYPE* m_Point2 = nullptr;
 
 		float m_Stiffness = 0; // [0 - inf] Higher = stiffer
 		float m_Dampening = 0.1f; // [0-1]

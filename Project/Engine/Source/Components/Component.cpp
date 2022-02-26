@@ -8,7 +8,14 @@ using namespace Engine::Components;
 
 GameObject* Component::GetGameObject() const { return m_GameObject; }
 
-Transform*  Component::GetTransform() 
+void Component::Removed()
+{
+	m_CachedRB = nullptr;
+	m_GameObject = nullptr;
+	m_CachedTransform = nullptr;
+}
+
+Transform* Component::GetTransform() 
 {
 	if (m_CachedTransform)
 		return m_CachedTransform;

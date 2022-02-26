@@ -18,7 +18,8 @@
 #define TOWER_DEMO			0
 #define TRIGGER_DEMO		0
 #define ROPE_DEMO			0
-#define PARTICLE_DEMO		1
+#define PARTICLE_DEMO		0
+#define OCTOPUSSS			1
 
 #define DRAW_GRID			0
 #define CAMERA_RAY_FORCE	1
@@ -43,27 +44,54 @@ Mesh* gridMesh = nullptr;
 const int GridSize = 250;
 #endif
 
-#if ROPE_DEMO
+#if ROPE_DEMO || OCTOPUSSS
 #include <Engine/Components/Physics/Constraints/Spring.hpp>
 GameObject* RopeRoot = nullptr;
 
-float RopeStiffness = 500.0f;
+int RopeLength = 5;
+float RopeMass = 10.0f;
+float RopeStiffness = 50.0f;
 float RopeRestingLength = 1.0f;
 float RopeDampingFactor = 0.1f;
 
 vector<Spring*> RopeComponents;
 #endif
 
-#if CAMERA_RAY_FORCE
-RaycastHit Hit = {};
-const float RayForce = 10.0f;
+#if OCTOPUSSS
+int OctopusLegs = 8;
+GameObject* OctopusBody = nullptr;
 #endif
 
-unsigned int TotalObjects = 0;
+#if TOWER_DEMO
+#ifdef NDEBUG
+int TowerSize = 8;
+#else
+int TowerSize = 3;
+#endif
+#endif
+
+#if CAMERA_RAY_FORCE
+RaycastHit Hit = {};
+float RayForce = 10.0f;
+#endif
+
+vector<GameObject*> CreatedObjects;
+
 void PhysicsDemo::OnStart()
 {
 	// Set ImGui Font
 	ImGui::GetIO().Fonts->AddFontFromFileTTF((AssetDir + "Fonts/Source Sans Pro/SourceSansPro-Regular.ttf").c_str(), 16.0f);
+
+	ResetScene();
+}
+
+void PhysicsDemo::ResetScene()
+{
+	for (GameObject* go : CreatedObjects)
+		delete go;
+	CreatedObjects.clear();
+
+	CurrentScene()->Clear();
 
 	// Default Cube Mesh //
 	MeshRenderer::MeshInfo meshInfo;
@@ -77,16 +105,11 @@ void PhysicsDemo::OnStart()
 	cameraObj->AddComponent<OrbitCameraController>();
 	cameraObj->GetTransform()->Position = { 0, 0, 20 };
 	cameraObj->GetTransform()->Rotation = { 0, radians(-90.0f), 0 }; // From euler angles
-	TotalObjects++;
+	CreatedObjects.emplace_back(cameraObj);
 
 	meshInfo.Material.Albedo = { 1, 0, 0, 1 };
 
 #if TOWER_DEMO
-#ifdef NDEBUG
-	const int TowerSize = 10;
-#else
-	const int TowerSize = 3;
-#endif
 	for (int x = 0; x < TowerSize; x++)
 	{
 		for (int y = 0; y < TowerSize; y++)
@@ -117,7 +140,7 @@ void PhysicsDemo::OnStart()
 
 				go->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 
-				TotalObjects++;
+				CreatedObjects.emplace_back(go);
 			}
 		}
 	}
@@ -135,7 +158,8 @@ void PhysicsDemo::OnStart()
 
 	trigger->SetTriggerEnterEvent([=](Collider*) { triggerObject->GetComponent<MeshRenderer>()->Meshes[0].Material.Albedo = { 1, 0, 0, 1 }; });
 	trigger->SetTriggerExitEvent([=](Collider*) { triggerObject->GetComponent<MeshRenderer>()->Meshes[0].Material.Albedo = { 0, 1, 0, 1 }; });
-	TotalObjects++;
+
+	CreatedObjects.emplace_back(triggerObject);
 
 	// Create object to fall through trigger
 	GameObject* fallingObject = new GameObject(CurrentScene(), "Falling Object");
@@ -146,24 +170,26 @@ void PhysicsDemo::OnStart()
 	fallingObject->AddComponent<Rigidbody>();
 	fallingObject->AddComponent<BoxCollider>()->SetCollisionEvent([=](Collider*, Rigidbody*) { fallingObject->GetTransform()->Position = { 0, 5, 0 }; });
 
-	TotalObjects++;
+	CreatedObjects.emplace_back(fallingObject);
 #endif
 
 #if ROPE_DEMO
-	const int ropeLength = 7;
 	Particle* previousParticle = nullptr;
+	meshInfo.Mesh = Mesh::Sphere();
+	RopeComponents.clear();
 	meshInfo.Material.Albedo = { 0.5f, 0.5f, 0.5f, 1.0f };
-	for (int i = 0; i < ropeLength; i++)
+	for (int i = 0; i < RopeLength; i++)
 	{
 		GameObject* rope = new GameObject(CurrentScene(), "Rope " + to_string(i));
 		rope->GetTransform()->Position = { i * RopeRestingLength, 0, 0.0f };
-		rope->GetTransform()->Scale = vec3(0.2f);
+		rope->GetTransform()->Scale = vec3(0.1f);
 		rope->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+		CreatedObjects.emplace_back(rope);
 
 		Particle* particle = rope->AddComponent<Particle>();
-		particle->SetMass(10.0f);
+		particle->SetMass(RopeMass);
 		if (i == 0)
-			particle->IsStatic = true;
+			particle->SetStatic(true);
 
 		if (previousParticle)
 		{
@@ -180,19 +206,99 @@ void PhysicsDemo::OnStart()
 	}
 #endif
 
+#if OCTOPUSSS
+	meshInfo.Mesh = Mesh::Sphere();
+	meshInfo.Material.Albedo = { 0.2f, 0.5f, 0.92f, 1.0f }; // Lightened blue
+	RopeComponents.clear();
+
+	OctopusBody = new GameObject(CurrentScene(), "Octopus");
+	OctopusBody->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+	OctopusBody->AddComponent<SphereCollider>();
+
+	// Create legs
+	for (int leg = 0; leg < OctopusLegs; leg++)
+	{
+		Particle* previousParticle = nullptr;
+		float x = cos((leg / (float)OctopusLegs) * radians(360.0f));
+		float z = sin((leg / (float)OctopusLegs) * radians(360.0f));
+		for (int i = 0; i < RopeLength; i++)
+		{
+			GameObject* rope = new GameObject(i == 0 ? OctopusBody : &CurrentScene()->Root(), "Rope " + to_string(i) + " " + to_string(leg));
+			rope->GetTransform()->Position = { x, i * -RopeRestingLength, z };
+			rope->GetTransform()->Scale = vec3(0.1f);
+			rope->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+			CreatedObjects.emplace_back(rope);
+
+			Particle* particle = rope->AddComponent<Particle>();
+			particle->SetMass(RopeMass);
+			if (i == 0)
+				particle->SetStatic(true);
+
+			if (previousParticle)
+			{
+				Spring* spring = rope->AddComponent<Spring>();
+				spring->SetBodies(previousParticle, particle);
+				spring->SetConstants(RopeStiffness, RopeDampingFactor);
+				spring->SetRestingLength(RopeRestingLength);
+				RopeComponents.emplace_back(spring);
+			}
+			previousParticle = particle;
+
+			if (i == 0)
+				RopeRoot = rope;
+		}
+	}
+
+	// Generate random obstacles
+	const unsigned int ObstacleCount = 20;
+	const vec3 ObstacleSpawnExtents = vec3(10, 5, 10);
+	for (int i = 0; i < ObstacleCount; i++)
+	{
+		GameObject* obstacle = new GameObject(CurrentScene(), "Obstacle " + to_string(i));
+		meshInfo.Material.Albedo = { Random(0.5f, 1.0f), Random(0.5f, 1.0f), Random(0.5f, 1.0f), 1.0f };
+		obstacle->GetTransform()->Position =
+		{
+			Random(-ObstacleSpawnExtents.x, ObstacleSpawnExtents.x),
+			Random(-ObstacleSpawnExtents.y, ObstacleSpawnExtents.y),
+			Random(-ObstacleSpawnExtents.z, ObstacleSpawnExtents.z)
+		};
+		const float Scale = 1.0f;
+		obstacle->GetTransform()->Scale = vec3(Scale);
+
+		if (Random(0.0f, 1.0f) > 0.5f)
+		{
+			obstacle->AddComponent<BoxCollider>();
+			obstacle->GetTransform()->Rotation =
+			{
+				Random(0.0f, radians(360.0f)),
+				Random(0.0f, radians(360.0f)),
+				Random(0.0f, radians(360.0f))
+			};
+			meshInfo.Mesh = Mesh::Cube();
+		}
+		else
+		{
+			obstacle->AddComponent<SphereCollider>()->SetRadius(Scale);
+			meshInfo.Mesh = Mesh::Sphere();
+		}
+		obstacle->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
+		CreatedObjects.emplace_back(obstacle);
+	}
+#endif
+
 #if PARTICLE_DEMO
 	const float ParticleSize = 0.5f;
 #ifndef NDEBUG
 	const int ParticleTowerSize = 3;
 #else
-	const int ParticleTowerSize = 10;
+	const int ParticleTowerSize = 8;
 #endif
 	meshInfo.Mesh = Mesh::Sphere();
-	for (int x = 0; x < ParticleTowerSize; x++)
+	for (float x = ParticleTowerSize / -2.0f; x < ParticleTowerSize / 2.0f; x++)
 	{
 		for (int y = 0; y < ParticleTowerSize; y++)
 		{
-			for (int z = 0; z < ParticleTowerSize; z++)
+			for (float z = ParticleTowerSize / -2.0f; z < ParticleTowerSize / 2.0f; z++)
 			{
 				GameObject* go = new GameObject(CurrentScene(), "Particle (" + to_string(x) + ", " + to_string(y) + ", " + to_string(z) + ")");
 				go->GetTransform()->Position = vec3(x, 3.0f + y, z) * ParticleSize * 2.5f;
@@ -208,18 +314,18 @@ void PhysicsDemo::OnStart()
 				meshInfo.Material.Albedo = { Random(0.5f, 1.0f), Random(0.5f, 1.0f), Random(0.5f, 1.0f), 1.0f };
 				go->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 
-				TotalObjects++;
+				CreatedObjects.emplace_back(go);
 			}
 		}
 	}
 
-	const int ObstacleWidth = 5;
+	const int ObstacleWidth = 6;
 	const float ObstacleSize = 0.5f;
 	const float ObstacleSpacing = 1.5f;
 	meshInfo.Material.Albedo = { 1, 0, 0, 1 };
-	for (int x = 0; x < ObstacleWidth; x++)
+	for (float x = ObstacleWidth / -2.0f; x < ObstacleWidth / 2.0f; x++)
 	{
-		for (int z = 0; z < ObstacleWidth; z++)
+		for (float z = ObstacleWidth / -2.0f; z < ObstacleWidth / 2.0f; z++)
 		{
 			GameObject* obstacle = new GameObject(CurrentScene(), "Particle Obstacle");
 			obstacle->GetTransform()->Position = vec3
@@ -232,6 +338,7 @@ void PhysicsDemo::OnStart()
 			obstacle->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 			obstacle->AddComponent<SphereCollider>()->SetRadius(ObstacleSize);
 			obstacle->AddComponent<Rigidbody>()->SetStatic(true);
+			CreatedObjects.emplace_back(obstacle);
 		}
 	}
 #endif
@@ -256,6 +363,16 @@ void PhysicsDemo::OnUpdate()
 
 	if (Input::IsKeyPressed(GLFW_KEY_SPACE))
 		CurrentScene()->GetPhysics().TogglePause();
+
+#if OCTOPUSSS
+	const float OctopusSpeed = 5.0f;
+	if (Input::IsKeyDown(GLFW_KEY_LEFT))		OctopusBody->GetTransform()->Position += vec3{ -1,  0,  0 } * OctopusSpeed * Renderer::GetDeltaTime();
+	if (Input::IsKeyDown(GLFW_KEY_RIGHT))		OctopusBody->GetTransform()->Position += vec3{  1,  0,  0 } * OctopusSpeed * Renderer::GetDeltaTime();
+	if (Input::IsKeyDown(GLFW_KEY_UP))			OctopusBody->GetTransform()->Position += vec3{  0,  0, -1 } * OctopusSpeed * Renderer::GetDeltaTime();
+	if (Input::IsKeyDown(GLFW_KEY_DOWN))		OctopusBody->GetTransform()->Position += vec3{  0,  0,  1 } * OctopusSpeed * Renderer::GetDeltaTime();
+	if (Input::IsKeyDown(GLFW_KEY_PAGE_UP))		OctopusBody->GetTransform()->Position += vec3{  0,  1,  0 } * OctopusSpeed * Renderer::GetDeltaTime();
+	if (Input::IsKeyDown(GLFW_KEY_PAGE_DOWN))	OctopusBody->GetTransform()->Position += vec3{  0, -1,  0 } * OctopusSpeed * Renderer::GetDeltaTime();
+#endif
 
 #if CAMERA_RAY_FORCE
 	Camera* camera = Camera::GetMainCamera();
@@ -288,12 +405,16 @@ void PhysicsDemo::OnDraw()
 		ImGui::Text("WASD:		  Move camera");
 		ImGui::Text("Q/E:		  Move camera up/down");
 		ImGui::Text("Right Mouse: Hold and move mouse to look around");
-		ImGui::Text("F:			  Applies force at blue box position");
+		ImGui::Text("F:			  Applies force at cursor position");
 		ImGui::Text("F11:		  Toggle fullscreen");
+#if OCTOPUSSS
+		ImGui::Text("ARROW KEYS:  Move octopus");
+		ImGui::Text("PAGE UP/DOWN:Raise/Lower octopus");
+#endif
+
 		ImGui::End();
 	}
 
-	// #ifndef NDEBUG
 	const ImVec4 ColourGood = { 1, 1, 1, 1 };
 	const ImVec4 ColourBad = { 1, 0, 0, 1 };
 
@@ -302,11 +423,11 @@ void PhysicsDemo::OnDraw()
 	if (ImGui::Begin("Debugging", &debugWindowOpen))
 	{
 		float frameTime = Renderer::GetDeltaTime() * 1000.0f;
-		float lastTimeStep = physicsSystem.LastTimeStep().count();
+		float lastTimeStep = physicsSystem.LastTimestep().count();
 		float desiredTimestep = physicsSystem.Timestep().count();
 
 		ImGui::Text("FPS: %f\n", Renderer::GetFPS());
-		ImGui::Text("Total Objects: %i", TotalObjects);
+		ImGui::Text("Total Objects: %i", (int)CreatedObjects.size());
 		ImGui::TextColored(
 			(frameTime < (1000.0f / 30.0f)) ? ColourGood : ColourBad,
 			"Render  Frame Time: %.1fms",
@@ -325,9 +446,19 @@ void PhysicsDemo::OnDraw()
 
 		ImGui::End();
 	}
-	// #endif
 
-#if ROPE_DEMO
+#if TOWER_DEMO
+	static bool towerWindowOpen = true;
+	if (ImGui::Begin("Tower Demo", &towerWindowOpen))
+	{
+		ImGui::SliderInt("Tower Width", &TowerSize, 1, 20);
+
+		if (ImGui::Button("Reset"))
+			ResetScene();
+	}
+#endif
+
+#if ROPE_DEMO || OCTOPUSSS
 	static bool ropeWindowOpen = true;
 	if (ImGui::Begin("Rope Demo", &ropeWindowOpen))
 	{
@@ -336,12 +467,27 @@ void PhysicsDemo::OnDraw()
 		if (ImGui::SliderFloat("Stiffness", &RopeStiffness, 0.0f, 1000.0f)) ropeDirty = true;
 		if (ImGui::SliderFloat("Dampening", &RopeDampingFactor, 0.0f, 1.0f)) ropeDirty = true;
 		if (ImGui::SliderFloat("Resting Length", &RopeRestingLength, 0.1f, 10.0f)) ropeDirty = true;
+		if (ImGui::SliderFloat("Particle Mass", &RopeMass, 0.1f, 100.0f)) ropeDirty = true;
+
+#if CAMERA_RAY_FORCE
+		ImGui::SliderFloat("Raycast Force", &RayForce, 0.0f, 100.0f);
+#endif
+
+#if OCTOPUSSS
+		ImGui::SliderInt("Tentacles", &OctopusLegs, 1, 20);
+#endif
+
+		ImGui::SliderInt("Rope Length", &RopeLength, 2, 20);
+		if (ImGui::Button("Reset"))
+			ResetScene();
 
 		ImGui::End();
 
 		if (ropeDirty)
 			for (Spring* rope : RopeComponents)
 			{
+				rope->GetPoint1()->SetMass(RopeMass);
+				rope->GetPoint2()->SetMass(RopeMass);
 				rope->SetRestingLength(RopeRestingLength);
 				rope->SetConstants(RopeStiffness, RopeDampingFactor);
 			}
@@ -381,7 +527,7 @@ void PhysicsDemo::CreateWall(vec3 axis)
 	transform->Rotation = axis * radians(90.0f); // Rotate 90 degrees on axis
 	transform->Position = -axis * WallDistance + WallOffset;
 
-	TotalObjects++;
+	CreatedObjects.emplace_back(wall);
 }
 
 void PhysicsDemo::CreateWalls()

@@ -15,12 +15,15 @@ namespace Engine::Components
 
 		void AddChild(Transform* child);
 		void SetParent(Transform* parent);
+		void RemoveChild(Transform* child);
+		void RemoveChild(unsigned int index);
 
 		glm::vec3 GetGlobalScale();
 		glm::vec3 GetGlobalPosition();
 		glm::vec3 GetGlobalRotation();
 		glm::mat4 GetGlobalRotationMatrix();
 
+		void ClearChildren();
 		Transform* GetParent();
 		std::vector<Transform*> GetChildren();
 

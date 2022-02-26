@@ -20,6 +20,7 @@ namespace Engine
 		Physics::PhysicsSystem& GetPhysics();
 
 		void Draw();
+		void Clear();
 		void DrawGizmos();
 		void Update(float deltaTime);
 	};

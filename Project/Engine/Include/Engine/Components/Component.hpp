@@ -28,7 +28,7 @@ namespace Engine
 			/// <summary>
 			/// Component is about to be removed from object
 			/// </summary>
-			virtual void Removed() { }
+			virtual void Removed();
 
 			virtual void Draw() { }
 			virtual void DrawGizmos() { }

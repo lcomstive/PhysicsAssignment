@@ -12,7 +12,7 @@ using namespace Engine::Graphics;
 using namespace Engine::Components;
 using namespace Engine::Graphics::Pipelines;
 
-DeferredRenderPipeline::DeferredRenderPipeline()
+DeferredRenderPipeline::DeferredRenderPipeline() : m_ForwardPass(nullptr)
 {
 	FramebufferSpec framebuffer = { Renderer::GetResolution()};
 
@@ -21,8 +21,7 @@ DeferredRenderPipeline::DeferredRenderPipeline()
 	{
 		TextureFormat::RGBA16F,	// Position
 		TextureFormat::RGBA16F,	// Normal
-		TextureFormat::RGBA8,	// Albedo w/ roughness in alpha channel
-		TextureFormat::RGBA8,	// Ambient Occlusion w/ metalness in alpha channel
+		TextureFormat::RGB8,	// Albedo
 		TextureFormat::Depth
 	};
 
@@ -72,6 +71,7 @@ DeferredRenderPipeline::~DeferredRenderPipeline()
 
 void DeferredRenderPipeline::MeshPass()
 {
+	glDisable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -95,17 +95,13 @@ void DeferredRenderPipeline::LightingPass()
 	m_MeshPass->GetColourAttachment(1)->Bind(1);
 	shader->Set("inputNormal", 1);
 
-	// Albedo + Roughness
+	// Albedo
 	m_MeshPass->GetColourAttachment(2)->Bind(2);
-	shader->Set("inputAlbedoRoughness", 2);
-
-	// Ambient Occlusion + Metalness
-	m_MeshPass->GetColourAttachment(3)->Bind(3);
-	shader->Set("inputAmbientMetalness", 3);
+	shader->Set("inputAlbedo", 2);
 
 	// Depth
-	m_MeshPass->GetDepthAttachment()->Bind(4);
-	shader->Set("inputDepth", 4);
+	m_MeshPass->GetDepthAttachment()->Bind(3);
+	shader->Set("inputDepth", 3);
 
 	// FILL LIGHT DATA //
 	auto lights = Renderer::GetApp()->CurrentScene()->Root().GetComponentsInChildren<Light>();

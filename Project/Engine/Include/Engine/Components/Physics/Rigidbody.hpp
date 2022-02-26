@@ -77,6 +77,11 @@ namespace Engine::Components
 		/// Friction against colliding objects
 		/// </summary>
 		float m_Friction;
+		
+		/// <summary>
+		/// Friction against air
+		/// </summary>
+		float m_Drag;
 
 		/// <summary>
 		/// When sleeping, no impulse resolution is applied until an external force is applied

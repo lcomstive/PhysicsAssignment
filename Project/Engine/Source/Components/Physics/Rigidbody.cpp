@@ -14,6 +14,7 @@ Rigidbody::Rigidbody() :
 	m_Force(),
 	m_CoR(0.5f),
 	m_Mass(1.0f),
+	m_Drag(0.1f),
 	m_Velocity(),
 	m_Torque(0.0f),
 	IsTrigger(false),
@@ -75,7 +76,7 @@ void Rigidbody::AddRotationalImpulse(vec3 point, vec3 impulse)
 
 void Rigidbody::ApplyWorldForces(float timestep)
 {
-	ApplyForce(GetSystem().GetGravity() * m_Mass);
+	// ApplyForce(GetSystem().GetGravity() * m_Mass);
 }
 
 void Rigidbody::CheckSleeping()
@@ -89,8 +90,11 @@ void Rigidbody::FixedUpdate(float timestep)
 	if(m_IsStatic)
 		return;
 	
-	const float damping = 0.95f;
 	Transform* transform = GetTransform();
+
+	const float damping = 0.95f;
+#if 0 // Implicit-Euler Integration
+	ApplyForce(GetSystem().GetGravity() * m_Mass);
 
 	// Linear motion
 	vec3 acceleration = m_Force * InverseMass();
@@ -107,6 +111,21 @@ void Rigidbody::FixedUpdate(float timestep)
 
 	transform->Position += m_Velocity * timestep;
 	transform->Rotation += m_AngularVelocity * timestep;
+#else // Verlet Integration
+	vec3 dragForce = 0.5f * m_Drag * (m_Velocity * abs(m_Velocity));
+	vec3 dragAcc = dragForce / m_Mass;
+	vec3 acceleration = GetSystem().GetGravity() - dragAcc;
+
+	transform->Position += m_Velocity * timestep + m_Force * (timestep * timestep * 0.5f);
+	m_Velocity += (m_Force + acceleration) * timestep * 0.5f;
+	m_Force = acceleration;
+
+	// Angular motion
+	vec3 angAccel = vec3(vec4(m_Torque, 1.0f) * InverseTensor());
+	m_AngularVelocity += (angAccel * timestep) * damping;
+
+	CheckSleeping();
+#endif
 }
 
 // Linear impulse, assumes neither object is static

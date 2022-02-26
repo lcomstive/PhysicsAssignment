@@ -9,7 +9,7 @@ using namespace Engine;
 using namespace Engine::Graphics;
 using namespace Engine::Components;
 
-void RenderPipeline::Draw(Camera* camera)
+void RenderPipeline::Draw(Camera& camera)
 {
 	for(unsigned int i = 0; i < (unsigned int)m_RenderPasses.size(); i++)
 	{
@@ -27,7 +27,7 @@ void RenderPipeline::Draw(Camera* camera)
 			m_CurrentShader->Set("time", Renderer::GetTime());
 			m_CurrentShader->Set("deltaTime", Renderer::GetDeltaTime());
 
-			camera->FillShader(m_CurrentShader);
+			camera.FillShader(m_CurrentShader);
 		}
 
 		// Draw calls
@@ -42,9 +42,9 @@ void RenderPipeline::Draw(Camera* camera)
 		info.Pass->End();
 	}
 
-	if (camera->RenderTarget && !m_RenderPasses.empty())
-		m_RenderPasses[m_RenderPasses.size() - 1].Pass->GetFramebuffer()->CopyAttachmentTo(camera->RenderTarget);
-	else
+	if (camera.RenderTarget && !m_RenderPasses.empty())
+		m_RenderPasses[m_RenderPasses.size() - 1].Pass->GetFramebuffer()->CopyAttachmentTo(camera.RenderTarget);
+	else if(!m_RenderPasses.empty())
 		m_RenderPasses[m_RenderPasses.size() - 1].Pass->GetFramebuffer()->BlitTo(nullptr, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 

@@ -22,7 +22,7 @@ namespace Engine::Components
 	public:
 		Graphics::Material Material;
 
-		void Initialize(unsigned int size, float distance);
+		void Initialize(unsigned int size, float spacing);
 		void Clear();
 
 		void SetBendSprings(float stiffness, float dampening);

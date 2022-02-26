@@ -87,22 +87,51 @@ namespace Engine
 		virtual void OnResized(glm::ivec2 resolution) { }
 
 	public:
+		/// <summary>
+		/// Local directory containing assets intended for use with the application.
+		/// Always has a leading slash.
+		/// </summary>
 		const static std::string AssetDir;
 
 		Application(ApplicationArgs args = {});
 
+		/// <summary>
+		/// Launches application and begins rendering loop on the current thread.
+		/// </summary>
 		void Run();
+
+		/// <summary>
+		/// Informs the application to close and release resources
+		/// </summary>
 		void Exit();
+
+		/// <summary>
+		/// The active scene
+		/// </summary>
 		Scene* CurrentScene();
 
+		/// <summary>
+		/// Renames the application window title
+		/// </summary>
 		void SetTitle(std::string title);
 
+		/// <returns>True if currently fullscreen mode</returns>
 		bool GetFullscreen();
+
+		/// <summary>
+		/// If fullscreen, make not fullscreen... and vice versa
+		/// </summary>
 		void ToggleFullscreen();
+
+		/// <summary>
+		/// Sets the application window fullscreen or windowed
+		/// </summary>
 		void SetFullscreen(bool fullscreen);
 	private:
 		GLFWwindow* m_Window;
 		ApplicationArgs m_Args;
+
+		// Cache windowed resolution, for when coming out of fullscreen mode
 		glm::ivec2 m_WindowedResolution;
 
 		static Application* s_Instance;
