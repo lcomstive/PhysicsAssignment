@@ -53,7 +53,7 @@ void Application::Run()
 	OnStart();
 
 	Renderer::SetPipeline<Pipelines::ForwardRenderPipeline>();
-	// Renderer::SetPipeline<Pipelines::DeferredRenderPipeline>(); // HAVEN'T FIGURED OUT GIZMOS W/ DEFERRED
+	// Renderer::SetPipeline<Pipelines::DeferredRenderPipeline>();
 
 	Renderer::Resized(m_Args.Resolution);
 	
@@ -251,8 +251,12 @@ void Application::SetupGizmos()
 			AssetDir + "Shaders/Gizmos.vert",
 			AssetDir + "Shaders/Gizmos.frag"
 		});
-	pass.DrawCallback = [&]()
+	pass.DrawCallback = [=]()
 	{
+		// Copy depth buffer to this pass
+		Renderer::GetPipeline()->GetPreviousPass()->GetFramebuffer()->BlitTo(pass.Pass->GetFramebuffer(), GL_DEPTH_BUFFER_BIT);
+
+		glEnable(GL_DEPTH_TEST);
 		m_Scene.DrawGizmos();
 		OnDrawGizmos();
 

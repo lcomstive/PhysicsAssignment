@@ -57,6 +57,6 @@ namespace Engine::Graphics
 
 		bool Wireframe = false;
 
-		void FillShader(Shader* shader);
+		void FillShader(Shader* shader) const;
 	};
 }

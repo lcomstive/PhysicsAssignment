@@ -18,7 +18,7 @@ void BindTexture(unsigned int index, string shaderName, Texture* texture, Shader
 		glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Material::FillShader(Shader* shader)
+void Material::FillShader(Shader* shader) const
 {
 	if (!shader)
 		return;

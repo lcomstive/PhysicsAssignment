@@ -56,6 +56,26 @@ DeferredRenderPipeline::DeferredRenderPipeline() : m_ForwardPass(nullptr)
 			Application::AssetDir + "Shaders/Deferred/Lighting.frag",
 		});
 	AddPass(pass);
+	
+	// Forward/Transparent Pass //
+	framebuffer.Attachments =
+	{
+		TextureFormat::RGBA8,
+		TextureFormat::Depth
+	};
+	framebuffer.SwapchainTarget = true;
+	m_ForwardPass = new RenderPass(framebuffer);
+	pass.Pass = m_ForwardPass;
+
+	pass.DrawCallback = bind(&DeferredRenderPipeline::ForwardPass, this);
+
+	pass.Shader = new Shader(
+		ShaderStageInfo
+		{
+			Application::AssetDir + "Shaders/Forward/Mesh.vert",
+			Application::AssetDir + "Shaders/Forward/Mesh.frag",
+		});
+	AddPass(pass);
 }
 
 DeferredRenderPipeline::~DeferredRenderPipeline()
@@ -76,7 +96,10 @@ void DeferredRenderPipeline::MeshPass()
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	Renderer::Draw();
+	DrawArgs args;
+	args.ClearQueue = false;
+	args.RenderTransparent = false;
+	Renderer::Draw(args);
 }
 
 const unsigned int MaxLights = 16;
@@ -121,4 +144,22 @@ void DeferredRenderPipeline::LightingPass()
 
 	// DRAW FULLSCREEN QUAD //
 	Mesh::Quad()->Draw();
+}
+
+void DeferredRenderPipeline::ForwardPass()
+{
+	glEnable(GL_DEPTH_TEST);
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	m_MeshPass->GetFramebuffer()->BlitTo(m_ForwardPass->GetFramebuffer(), GL_DEPTH_BUFFER_BIT);
+	m_LightingPass->GetFramebuffer()->BlitTo(m_ForwardPass->GetFramebuffer(), GL_COLOR_BUFFER_BIT);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	DrawArgs args;
+	args.RenderOpaque = false;
+	args.DrawSorting = DrawSortType::BackToFront;
+	Renderer::Draw(args);
 }

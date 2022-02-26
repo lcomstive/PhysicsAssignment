@@ -1,4 +1,5 @@
 #version 330 core
+#include "ASSET_DIR/Shaders/Include/Tonemap.inc"
 #include "ASSET_DIR/Shaders/Include/Material.inc"
 
 out vec4 FragColour;
@@ -27,4 +28,7 @@ void main()
 	// Check for alpha clipping
 	if(alphaClipping && FragColour.a <= alphaClipThreshold)
 		discard;
+
+	// FragColour.rgb = GammaCorrect(ReinhardTonemap(FragColour.rgb));
+	// FragColour.rgb = AcesTonemap(FragColour.rgb);
 }

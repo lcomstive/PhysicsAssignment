@@ -192,8 +192,19 @@ void PhysicsSystem::PositionalCorrect()
 		float depth = fmaxf(collision.Result.PenetrationDepth - m_PenetrationSlack, 0.0f);
 		vec3 correction = collision.Result.Normal * (depth / totalMass) * m_LinearProjectionPercent;
 
-		if (collision.ARigidbody) collision.A->GetTransform()->Position -= correction * collision.ARigidbody->InverseMass();
-		if (collision.BRigidbody) collision.B->GetTransform()->Position += correction * collision.BRigidbody->InverseMass();
+		for (const auto& contact : collision.Result.Contacts)
+		{
+			if (collision.ARigidbody)
+			{
+				// collision.A->GetTransform()->Position -= correction * collision.ARigidbody->InverseMass();
+				collision.ARigidbody->ApplyForce(-correction, contact, ForceMode::Impulse, true);
+			}
+			if (collision.BRigidbody)
+			{
+				// collision.B->GetTransform()->Position += correction * collision.BRigidbody->InverseMass();
+				collision.BRigidbody->ApplyForce( correction, contact, ForceMode::Impulse, true);
+			}
+		}
 	}
 }
 
@@ -264,7 +275,7 @@ vector<Collider*> PhysicsSystem::Query(Sphere& bounds) { return m_Broadphase ? m
 bool PhysicsSystem::LineTest(Line line, Engine::Components::Collider* ignoreCollider) { return m_Broadphase ? m_Broadphase->LineTest(line, ignoreCollider) : false; }
 Collider* PhysicsSystem::Raycast(Ray ray, Collider* ignoreCollider, RaycastHit* outResult) { return m_Broadphase ? m_Broadphase->Raycast(ray, ignoreCollider, outResult) : nullptr; }
 
-#define DRAW_CONTACTS 0
+#define DRAW_CONTACTS 1
 void PhysicsSystem::DrawGizmos()
 {
 #if !defined(NDEBUG) && DRAW_CONTACTS

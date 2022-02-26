@@ -11,6 +11,7 @@ using namespace Engine::Components;
 
 void RenderPipeline::Draw(Camera& camera)
 {
+	m_PreviousPass = nullptr;
 	for(unsigned int i = 0; i < (unsigned int)m_RenderPasses.size(); i++)
 	{
 		RenderPipelinePass& info = m_RenderPasses[i];
@@ -40,7 +41,9 @@ void RenderPipeline::Draw(Camera& camera)
 
 		m_CurrentShader = nullptr;
 		info.Pass->End();
+		m_PreviousPass = info.Pass;
 	}
+	m_PreviousPass = nullptr;
 
 	if (camera.RenderTarget && !m_RenderPasses.empty())
 		m_RenderPasses[m_RenderPasses.size() - 1].Pass->GetFramebuffer()->CopyAttachmentTo(camera.RenderTarget);
@@ -84,3 +87,4 @@ void RenderPipeline::OnResized(ivec2 resolution)
 }
 
 Shader* RenderPipeline::CurrentShader() { return m_CurrentShader; }
+RenderPass* RenderPipeline::GetPreviousPass() { return m_PreviousPass; }

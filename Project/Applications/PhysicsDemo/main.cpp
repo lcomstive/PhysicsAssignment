@@ -8,7 +8,7 @@ Engine::ApplicationArgs applicationArgs =
 	4,				// Samples
 	"Physics Demo",	// Title
 	{ 1280, 720 },	// Resolution
-	20ms			// Physics Timestep
+	10ms			// Physics Timestep
 };
 
 #if defined(NDEBUG) && defined(_WIN32)

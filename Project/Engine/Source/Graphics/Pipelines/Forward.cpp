@@ -45,5 +45,7 @@ void ForwardRenderPipeline::ForwardPass()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	Renderer::Draw();
+	DrawArgs args;
+	args.DrawSorting = DrawSortType::BackToFront;
+	Renderer::Draw(args);
 }

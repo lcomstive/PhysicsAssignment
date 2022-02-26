@@ -231,7 +231,6 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(OBB& a, OBB& b)
 		result.Contacts[i] = contact + (axis * dot(axis, pointOnPlane - contact));
 
 		// Check for duplicates
-		/*
 		for (int j = (int)result.Contacts.size() - 1; j > i; j--)
 		{
 			if (BasicallyZero(MagnitudeSqr(result.Contacts[j] - result.Contacts[i])))
@@ -240,7 +239,6 @@ CollisionManifold Engine::Physics::FindCollisionFeatures(OBB& a, OBB& b)
 				break;
 			}
 		}
-		*/
 	}
 
 	result.Normal = axis;

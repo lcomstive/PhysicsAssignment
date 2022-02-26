@@ -43,7 +43,7 @@ namespace Engine::Physics
 		/// smaller values allow objects to penetrate more.
 		/// Typically 0.2-0.8
 		/// </summary>
-		float m_LinearProjectionPercent = 0.5f;
+		float m_LinearProjectionPercent = 0.3f;
 
 		/// <summary>
 		/// How much to allow objects to penetrate.

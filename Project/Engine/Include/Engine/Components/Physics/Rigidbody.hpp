@@ -18,8 +18,8 @@ namespace Engine::Components
 		Physics::PhysicsSystem& GetSystem();
 
 		void ApplyForce(glm::vec3 force, ForceMode mode = ForceMode::Acceleration);
-		void ApplyForce(glm::vec3 force, glm::vec3 position, ForceMode mode = ForceMode::Acceleration);
-		void AddRotationalImpulse(glm::vec3 point, glm::vec3 impulse);
+		void ApplyForce(glm::vec3 force, glm::vec3 forcePosition, ForceMode mode = ForceMode::Acceleration, bool globalForcePosition = false);
+		void AddRotationalImpulse(glm::vec3 point, glm::vec3 impulse, bool globalPoint = false);
 
 		float GetMass();
 		void  SetMass(float value);

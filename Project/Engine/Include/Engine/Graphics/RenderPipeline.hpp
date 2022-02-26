@@ -21,6 +21,7 @@ namespace Engine::Graphics
 	{
 	protected:
 		Shader* m_CurrentShader = nullptr;
+		RenderPass* m_PreviousPass = nullptr;
 		std::vector<RenderPipelinePass> m_RenderPasses;
 
 	public:
@@ -28,6 +29,9 @@ namespace Engine::Graphics
 
 		/// <returns>The texture of the last render pass' output</returns>
 		RenderTexture* GetOutputAttachment(unsigned int index = 0);
+
+		/// <returns>The render pass that has just finished</returns>
+		RenderPass* GetPreviousPass();
 
 		virtual void RemovePass(RenderPass* pass);
 		virtual void AddPass(RenderPipelinePass& passInfo);

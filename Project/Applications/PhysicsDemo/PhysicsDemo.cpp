@@ -66,7 +66,7 @@ GameObject* OctopusBody = nullptr;
 #ifdef NDEBUG
 int TowerSize = 8;
 #else
-int TowerSize = 3;
+int TowerSize = 2;
 #endif
 #endif
 
@@ -208,7 +208,7 @@ void PhysicsDemo::ResetScene()
 
 #if OCTOPUSSS
 	meshInfo.Mesh = Mesh::Sphere();
-	meshInfo.Material.Albedo = { 0.2f, 0.5f, 0.92f, 1.0f }; // Lightened blue
+	meshInfo.Material.Albedo = { 0.2f, 0.5f, 0.92f, 0.25f }; // Lightened blue
 	RopeComponents.clear();
 
 	OctopusBody = new GameObject(CurrentScene(), "Octopus");
@@ -455,6 +455,7 @@ void PhysicsDemo::OnDraw()
 
 		if (ImGui::Button("Reset"))
 			ResetScene();
+		ImGui::End();
 	}
 #endif
 

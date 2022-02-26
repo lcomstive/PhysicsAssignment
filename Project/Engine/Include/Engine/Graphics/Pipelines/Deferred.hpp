@@ -8,8 +8,8 @@ namespace Engine::Graphics::Pipelines
 		RenderPass *m_MeshPass, *m_LightingPass, *m_ForwardPass;
 
 		void MeshPass();
-		void LightingPass();
 		void ForwardPass();
+		void LightingPass();
 
 	public:
 		DeferredRenderPipeline();

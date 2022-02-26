@@ -29,14 +29,15 @@ std::vector<CollisionFrame>& BasicBroadphase::GetPotentialCollisions()
 	m_Collisions.clear();
 	m_Collisions.reserve(m_Colliders.size() * 2); // Assume every object is colliding with something
 
+	auto colliders = m_Colliders; // Make local scoped copy
 	for (uint32_t i = 0, size = (uint32_t)m_Colliders.size(); i < size; i++)
 	{
-		Rigidbody* aRb = m_Colliders[i]->GetRigidbody();
-		OBB& bounds = m_Colliders[i]->GetBounds();
+		Rigidbody* aRb = colliders[i]->GetRigidbody();
+		OBB& bounds = colliders[i]->GetBounds();
 		float magnitude = MagnitudeSqr(bounds.Extents);
 		for (uint32_t j = i + 1; j < size; j++)
 		{
-			OBB& bounds2 = m_Colliders[j]->GetBounds();
+			OBB& bounds2 = colliders[j]->GetBounds();
 
 			/*
 			float dist = distance(bounds.Position, bounds2.Position);
@@ -44,14 +45,14 @@ std::vector<CollisionFrame>& BasicBroadphase::GetPotentialCollisions()
 				continue;
 			*/
 
-			Rigidbody* bRb = m_Colliders[j]->GetRigidbody();
+			Rigidbody* bRb = colliders[j]->GetRigidbody();
 			if (((aRb && !aRb->IsStatic()) || (bRb && !bRb->IsStatic())) &&
 				TestBoxBoxCollider(bounds, bounds2))
 				m_Collisions.emplace_back(CollisionFrame
 					{
-						m_Colliders[i],
+						colliders[i],
 						aRb,
-						m_Colliders[j],
+						colliders[j],
 						bRb
 					});
 		}

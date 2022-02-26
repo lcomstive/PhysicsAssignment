@@ -2,12 +2,14 @@
 #include <GLFW/glfw3.h>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/euler_angles.hpp>
+#include <Engine/Components/Camera.hpp>
 #include <Engine/Graphics/Renderer.hpp>
 
 using namespace std;
 using namespace glm;
 using namespace Engine;
 using namespace Engine::Graphics;
+using namespace Engine::Components;
 
 float Renderer::s_FPS = 0;
 Application* Renderer::s_App = nullptr;
@@ -17,8 +19,9 @@ uint32_t Renderer::s_Samples = 1;
 float Renderer::s_DeltaTime = 0;
 bool Renderer::s_Wireframe = false;
 ivec2 Renderer::s_Resolution = { 0, 0 };
-vector<DrawCall> Renderer::s_DrawQueue = {};
 RenderPipeline* Renderer::s_Pipeline = nullptr;
+
+vector<DrawCall> Renderer::s_DrawQueue = {};
 
 void Renderer::SetVSync(bool vsync) { glfwSwapInterval(s_VSync = vsync ? 1 : 0); }
 void Renderer::SetWireframe(bool wireframe) { glPolygonMode(GL_FRONT_AND_BACK, (s_Wireframe = wireframe) ? GL_LINE : GL_FILL); }
@@ -39,29 +42,51 @@ void Renderer::Shutdown()
 		delete s_Pipeline;
 }
 
-void Renderer::Draw(bool clearQueue)
+void Renderer::SortDrawQueue(DrawSortType sortType)
 {
-	Shader* shader = s_Pipeline->CurrentShader();
-	for (unsigned int i = 0; i < (unsigned int)s_DrawQueue.size(); i++)
-	{
-		// Generate model matrix
-		mat4 translationMatrix = translate(mat4(1.0f), s_DrawQueue[i].Position);
-		mat4 scaleMatrix = scale(mat4(1.0f), s_DrawQueue[i].Scale);
+	Camera* camera = Camera::GetMainCamera();
+	vec3 cameraPos = camera->GetTransform()->GetGlobalPosition();
+	if (sortType == DrawSortType::None || !camera)
+		return;
 
-		shader->Set("modelMatrix", translationMatrix * s_DrawQueue[i].Rotation * scaleMatrix);
+	sort(s_DrawQueue.begin(), s_DrawQueue.end(), [=](DrawCall& a, DrawCall& b)
+		{
+			float distanceA = glm::distance(cameraPos, a.Position);
+			float distanceB = glm::distance(cameraPos, b.Position);
+			return sortType == DrawSortType::BackToFront ? (distanceA > distanceB) : (distanceB > distanceA);
+		});
+}
+
+void Renderer::Draw(DrawArgs args)
+{
+	SortDrawQueue(args.DrawSorting);
+	Shader* shader = s_Pipeline->CurrentShader();
+
+	for(const DrawCall& drawCall : s_DrawQueue)
+	{
+		if (!args.RenderOpaque && drawCall.Material.Albedo.a >= 1.0f)
+			continue;
+		if (!args.RenderTransparent && drawCall.Material.Albedo.a < 1.0f)
+			continue;
+
+		// Generate model matrix
+		mat4 translationMatrix = translate(mat4(1.0f), drawCall.Position);
+		mat4 scaleMatrix = scale(mat4(1.0f), drawCall.Scale);
+
+		shader->Set("modelMatrix", translationMatrix * drawCall.Rotation * scaleMatrix);
 
 		// Fill material values
-		s_DrawQueue[i].Material.FillShader(shader);
+		drawCall.Material.FillShader(shader);
 
-		Renderer::SetWireframe(s_DrawQueue[i].Material.Wireframe);
+		Renderer::SetWireframe(drawCall.Material.Wireframe);
 
-		s_DrawQueue[i].Mesh->Draw();
+		drawCall.Mesh->Draw();
 
-		if (s_DrawQueue[i].DeleteMeshAfterRender)
-			delete s_DrawQueue[i].Mesh;
+		if (drawCall.DeleteMeshAfterRender)
+			delete drawCall.Mesh;
 	}
 
-	if (clearQueue)
+	if (args.ClearQueue)
 		ClearDrawQueue();
 }
 
@@ -107,4 +132,11 @@ void Renderer::Submit(Mesh* mesh, Material& material, Components::Transform* tra
 		});
 }
 
-void Renderer::Submit(DrawCall drawCall) { s_DrawQueue.emplace_back(drawCall); }
+void Renderer::Submit(DrawCall drawCall)
+{
+#if !SORTED_DRAW_CALLS
+	s_DrawQueue.emplace_back(drawCall);
+#else
+	s_DrawQueue.emplace(drawCall);
+#endif
+}

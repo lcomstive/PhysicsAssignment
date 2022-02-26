@@ -1,4 +1,5 @@
 #pragma once
+#include <set>
 #include <mutex>
 #include <vector>
 #include <glm/glm.hpp>
@@ -20,6 +21,26 @@ namespace Engine::Graphics
 		glm::mat4 Rotation = glm::mat4(1.0f);
 
 		bool DeleteMeshAfterRender = false;
+
+		bool operator ==(const DrawCall& b)
+		{
+			return Mesh == b.Mesh &&
+				// Material == b.Material &&
+				Position == b.Position &&
+				Scale == b.Scale &&
+				Rotation == b.Rotation &&
+				DeleteMeshAfterRender == b.DeleteMeshAfterRender;
+		}
+	};
+
+	enum class DrawSortType { None, FrontToBack, BackToFront };
+
+	struct DrawArgs
+	{
+		bool ClearQueue = true;
+		bool RenderOpaque = true;
+		bool RenderTransparent = true;
+		DrawSortType DrawSorting = DrawSortType::None;
 	};
 
 	class Renderer
@@ -29,16 +50,18 @@ namespace Engine::Graphics
 		static glm::ivec2 s_Resolution;
 		static bool s_Wireframe, s_VSync;
 		static RenderPipeline* s_Pipeline;
-		static std::vector<DrawCall> s_DrawQueue;
 		static float s_Time, s_FPS, s_DeltaTime;
+
+		static std::vector<DrawCall> s_DrawQueue;
 
 		static void Shutdown();
 		static void Resized(glm::ivec2 newResolution);
+		static void SortDrawQueue(DrawSortType sortType);
 
 		friend class Engine::Application;
 
 	public:
-		static void Draw(bool clearQueue = true);
+		static void Draw(DrawArgs args = {});
 
 		static void ClearDrawQueue();
 		static void Submit(DrawCall drawCall);

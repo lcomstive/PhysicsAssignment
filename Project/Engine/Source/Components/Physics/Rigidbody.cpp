@@ -61,15 +61,15 @@ void Rigidbody::ApplyForce(glm::vec3 force, ForceMode mode)
 	}
 }
 
-void Rigidbody::ApplyForce(glm::vec3 force, glm::vec3 position, ForceMode mode)
+void Rigidbody::ApplyForce(glm::vec3 force, glm::vec3 position, ForceMode mode, bool globalForcePosition)
 {
 	ApplyForce(force, mode);
-	AddRotationalImpulse(position, force);
+	AddRotationalImpulse(position, force, globalForcePosition);
 }
 
-void Rigidbody::AddRotationalImpulse(vec3 point, vec3 impulse)
+void Rigidbody::AddRotationalImpulse(vec3 point, vec3 impulse, bool globalPoint)
 {
-	vec3 CoM = GetTransform()->Position; // Center of Mass
+	vec3 CoM = globalPoint ? GetTransform()->GetGlobalPosition() : GetTransform()->Position; // Center of Mass
 	vec3 torque = cross(point - CoM, impulse);
 	m_AngularVelocity += vec3(InverseTensor() * vec4(torque, 1.0f));
 }
@@ -123,6 +123,7 @@ void Rigidbody::FixedUpdate(float timestep)
 	// Angular motion
 	vec3 angAccel = vec3(vec4(m_Torque, 1.0f) * InverseTensor());
 	m_AngularVelocity += (angAccel * timestep) * damping;
+	transform->Rotation += m_AngularVelocity * timestep;
 
 	CheckSleeping();
 #endif
@@ -239,7 +240,7 @@ void Rigidbody::ApplyImpulse(Collider* other, CollisionManifold manifold, int co
 	vec3 impulse = relativeNorm * j;
 	m_Velocity -= impulse * invMass1;
 	m_AngularVelocity -= vec3(i1 * vec4(cross(r1, impulse), 1.0f));
-	
+
 	// Call collision event
 	Collider* thisCollider = GetGameObject()->GetComponent<Collider>(true);
 	if(thisCollider->m_CollisionEvent)
