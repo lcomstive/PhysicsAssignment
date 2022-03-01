@@ -30,7 +30,7 @@ std::vector<CollisionFrame>& BasicBroadphase::GetPotentialCollisions()
 	m_Collisions.reserve(m_Colliders.size() * 2); // Assume every object is colliding with something
 
 	auto colliders = m_Colliders; // Make local scoped copy
-	for (uint32_t i = 0, size = (uint32_t)m_Colliders.size(); i < size; i++)
+	for (uint32_t i = 0, size = (uint32_t)colliders.size(); i < size; i++)
 	{
 		Rigidbody* aRb = colliders[i]->GetRigidbody();
 		OBB& bounds = colliders[i]->GetBounds();
@@ -39,11 +39,9 @@ std::vector<CollisionFrame>& BasicBroadphase::GetPotentialCollisions()
 		{
 			OBB& bounds2 = colliders[j]->GetBounds();
 
-			/*
 			float dist = distance(bounds.Position, bounds2.Position);
 			if (dist * dist > magnitude)
 				continue;
-			*/
 
 			Rigidbody* bRb = colliders[j]->GetRigidbody();
 			if (((aRb && !aRb->IsStatic()) || (bRb && !bRb->IsStatic())) &&
@@ -64,11 +62,12 @@ std::vector<CollisionFrame>& BasicBroadphase::GetPotentialCollisions()
 vector<Collider*> BasicBroadphase::Query(Sphere& bounds) const
 {
 	vector<Collider*> output;
+	auto colliders = m_Colliders;
 
-	for (int i = 0; i < m_Colliders.size(); i++)
+	for (int i = 0; i < colliders.size(); i++)
 	{
-		if (TestSphereBoxCollider(bounds, m_Colliders[i]->GetBounds()))
-			output.emplace_back(m_Colliders[i]);
+		if (TestSphereBoxCollider(bounds, colliders[i]->GetBounds()))
+			output.emplace_back(colliders[i]);
 	}
 	return output;
 }
@@ -76,11 +75,12 @@ vector<Collider*> BasicBroadphase::Query(Sphere& bounds) const
 vector<Collider*> BasicBroadphase::Query(AABB& bounds) const
 {
 	vector<Collider*> output;
+	auto colliders = m_Colliders;
 
-	for (int i = 0; i < m_Colliders.size(); i++)
+	for (int i = 0; i < colliders.size(); i++)
 	{
-		if (TestBoxBoxCollider(bounds, m_Colliders[i]->GetBounds()))
-			output.emplace_back(m_Colliders[i]);
+		if (TestBoxBoxCollider(bounds, colliders[i]->GetBounds()))
+			output.emplace_back(colliders[i]);
 	}
 	return output;
 }
@@ -90,14 +90,15 @@ bool BasicBroadphase::LineTest(Line& line, Collider* ignoreCollider)
 	Collider* closest = nullptr;
 	RaycastHit hit = {}, closestHit = {};
 
-	for (int i = 0; i < m_Colliders.size(); i++)
+	auto colliders = m_Colliders;
+	for (int i = 0; i < colliders.size(); i++)
 	{
-		if (!m_Colliders[i] ||
-			m_Colliders[i] == ignoreCollider ||
-			!m_Colliders[i]->LineTest(line) ||
+		if (!colliders[i] ||
+			colliders[i] == ignoreCollider ||
+			!colliders[i]->LineTest(line) ||
 			(closest && hit.Distance >= closestHit.Distance))
 			continue;
-		closest = m_Colliders[i];
+		closest = colliders[i];
 		closestHit = hit;
 	}
 
@@ -109,13 +110,14 @@ Collider* BasicBroadphase::Raycast(Ray ray, Collider* ignoreCollider, RaycastHit
 	Collider* closest = nullptr;
 	RaycastHit hit = {}, closestHit = {};
 
-	for (int i = 0; i < m_Colliders.size(); i++)
+	auto colliders = m_Colliders;
+	for (int i = 0; i < colliders.size(); i++)
 	{
-		if (m_Colliders[i] == ignoreCollider ||
-			!m_Colliders[i]->Raycast(ray, &hit) ||
+		if (colliders[i] == ignoreCollider ||
+			!colliders[i]->Raycast(ray, &hit) ||
 			(closest && hit.Distance >= closestHit.Distance))
 			continue;
-		closest = m_Colliders[i];
+		closest = colliders[i];
 		closestHit = hit;
 	}
 

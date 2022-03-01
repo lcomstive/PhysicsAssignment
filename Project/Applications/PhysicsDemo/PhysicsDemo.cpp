@@ -461,7 +461,11 @@ void PhysicsDemo::OnDraw()
 
 #if ROPE_DEMO || OCTOPUSSS
 	static bool ropeWindowOpen = true;
+#if ROPE_DEMO
 	if (ImGui::Begin("Rope Demo", &ropeWindowOpen))
+#else
+	if (ImGui::Begin("Octopus Demo", &ropeWindowOpen))
+#endif
 	{
 		bool ropeDirty = false;
 
