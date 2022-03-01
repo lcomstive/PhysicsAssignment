@@ -4,12 +4,13 @@ using UnityEngine;
 
 namespace LC.Weapons
 {
+	[CreateAssetMenu(fileName = "Weapon", menuName = "Weapon Data")]
 	public class WeaponData : ScriptableObject
 	{
 		public float Damage = 10.0f;
 
-		[Tooltip("Amount of bullets held in gun storage, or <=0 for infinite")]
-		public float ClipSize = 0.0f;
+		[Tooltip("Amount of bullets held in gun storage, or < 0 for infinite")]
+		public int ClipSize = -1;
 
 		public AnimationClip ReloadAnimation = null;
 

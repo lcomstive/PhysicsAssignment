@@ -49,7 +49,7 @@ namespace LC.Player
 			else
 				m_PreviousForce += Physics.gravity * Time.fixedDeltaTime;
 
-			m_Controller.Move((m_Velocity + m_PreviousForce) * Time.fixedDeltaTime);
+			m_Controller.Move((m_Velocity + transform.TransformDirection(m_PreviousForce)) * Time.fixedDeltaTime);
 		}
 	}
 }

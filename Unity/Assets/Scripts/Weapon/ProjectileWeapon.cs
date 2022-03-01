@@ -9,16 +9,17 @@ namespace LC.Weapons
 		[SerializeField]
 		private GameObject m_ProjectilePrefab;
 
-		[SerializeField]
-		private float m_ProjectileSpeed = 25.0f;
-
-		public override void Shoot(Vector3 spawnPosition)
+		public override void Shoot(Transform spawnTransform)
 		{
-			GameObject spawned = Instantiate(m_ProjectilePrefab, spawnPosition, Quaternion.identity);
+			GameObject spawned = Instantiate(
+				m_ProjectilePrefab,
+				spawnTransform.position,
+				spawnTransform.rotation * m_ProjectilePrefab.transform.rotation
+				);
 			
 			Rigidbody rb = spawned.GetComponent<Rigidbody>();
 			if(rb)
-				rb.AddForce(transform.forward * m_ProjectileSpeed, ForceMode.Impulse);
+				rb.AddForce(transform.forward * Data.ForceApplied, ForceMode.Impulse);
 		}
 	}
 }
