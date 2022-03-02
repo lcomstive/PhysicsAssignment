@@ -26,6 +26,18 @@ namespace LC.Player
 
 		private void OnWeaponShot(Weapon weapon) => m_TimeRemaining = 1.0f;
 
+		private void OnEnable()
+		{
+			foreach(ReticleItem reticle in m_Reticles)
+				reticle.Transform.gameObject.SetActive(true);
+		}
+
+		private void OnDisable()
+		{
+			foreach(ReticleItem reticle in m_Reticles)
+				reticle.Transform.gameObject.SetActive(false);
+		}
+
 		private void Update()
 		{
 			m_TimeRemaining = Mathf.Clamp(m_TimeRemaining - Time.deltaTime * m_MoveSpeed, 0.0f, 1.0f);

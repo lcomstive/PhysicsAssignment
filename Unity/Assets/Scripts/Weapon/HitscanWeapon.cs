@@ -8,7 +8,7 @@ namespace LC.Weapons
 		[SerializeField]
 		private float m_HitscanRange = 100.0f;
 
-		public override void Shoot(Transform spawnTransform)
+		protected override void Shoot(Transform spawnTransform)
 		{
 			// if(!Physics.Raycast(spawnTransform.position, spawnTransform.forward, out RaycastHit hit, m_HitscanRange))
 
@@ -18,7 +18,7 @@ namespace LC.Weapons
 
 			IHittable hittable = hit.collider.GetComponent<IHittable>();
 			if(hittable != null)
-				hittable.Hit(spawnTransform.forward * Data.ForceApplied);
+				hittable.Hit(spawnTransform.forward * m_Data.ForceApplied);
 		}
 	}
 }

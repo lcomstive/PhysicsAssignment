@@ -19,5 +19,17 @@ namespace LC.Weapons
 
 		[Tooltip("Amount of force to apply to any shot object, in direction of bullet")]
 		public float ForceApplied = 10.0f;
+
+		[Header("Recoil")]
+		[Tooltip("How far to recoil the gun each shot")]
+		public float RecoilAmount = 2.5f;
+
+		[Tooltip("How far to recoil the gun each shot")]
+		public float RecoilRecoverySpeed = 1.0f;
+
+		[Header("Pullout")]
+		public AnimationCurve PulloutPositionCurve;
+		public AnimationCurve PulloutRotationCurve;
+
 	}
 }

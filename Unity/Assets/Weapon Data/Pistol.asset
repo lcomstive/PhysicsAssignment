@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0f2cc1a23ccef1c4998a54b7a8623196, type: 3}
-  m_Name: Assault Rifle
+  m_Name: Pistol
   m_EditorClassIdentifier: 
-  Damage: 3
-  ClipSize: 5
+  Damage: 10
+  ClipSize: 6
   ReloadAnimation: {fileID: 0}
-  ShootCooldown: 0.1
-  ForceApplied: 10
+  ShootCooldown: 0.5
+  ForceApplied: 20
   RecoilAmount: 2.5
   RecoilRecoverySpeed: 1
   PulloutPositionCurve:
@@ -24,31 +24,31 @@ MonoBehaviour:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: -0.5
-      inSlope: 1.9957976
-      outSlope: 1.9957976
+      value: -1
+      inSlope: 7.7220793
+      outSlope: 7.7220793
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0
-      outWeight: 0.07
+      inWeight: 0.33333334
+      outWeight: 0.083743826
     - serializedVersion: 3
-      time: 0.2
-      value: -0.15
-      inSlope: 1.414027
-      outSlope: 0.46989274
-      tangentMode: 1
+      time: 0.09552944
+      value: -0.33233285
+      inSlope: 1.0889101
+      outSlope: 1.0889101
+      tangentMode: 0
       weightedMode: 0
-      inWeight: 0.07799998
-      outWeight: 0.07855392
+      inWeight: 0.33333334
+      outWeight: 0.33333334
     - serializedVersion: 3
-      time: 0.5
+      time: 1
       value: 0
-      inSlope: 0.3404138
-      outSlope: 0.3404138
-      tangentMode: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
       weightedMode: 0
-      inWeight: 0.07200003
-      outWeight: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
@@ -57,21 +57,21 @@ MonoBehaviour:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 60
-      inSlope: -18.048027
-      outSlope: -18.048027
+      value: 0
+      inSlope: -18.13054
+      outSlope: -18.13054
       tangentMode: 0
       weightedMode: 0
       inWeight: 0.33333334
-      outWeight: 0.088
+      outWeight: 0.0584
     - serializedVersion: 3
-      time: 0.5
-      value: 0
-      inSlope: -202.66544
-      outSlope: -202.66544
+      time: 1
+      value: 720
+      inSlope: 787.8137
+      outSlope: 787.8137
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.032000005
+      inWeight: 0.033599973
       outWeight: 0.33333334
     m_PreInfinity: 2
     m_PostInfinity: 2

@@ -1,6 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using LC.Player;
 
 namespace LC.Weapons
 {
@@ -9,7 +8,7 @@ namespace LC.Weapons
 		[SerializeField]
 		private GameObject m_ProjectilePrefab;
 
-		public override void Shoot(Transform spawnTransform)
+		protected override void Shoot(Transform spawnTransform)
 		{
 			GameObject spawned = Instantiate(
 				m_ProjectilePrefab,
@@ -19,7 +18,7 @@ namespace LC.Weapons
 			
 			Rigidbody rb = spawned.GetComponent<Rigidbody>();
 			if(rb)
-				rb.AddForce(transform.forward * Data.ForceApplied, ForceMode.Impulse);
+				rb.AddForce(transform.forward * m_Data.ForceApplied, ForceMode.Impulse);
 		}
 	}
 }
