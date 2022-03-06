@@ -39,9 +39,11 @@ std::vector<CollisionFrame>& BasicBroadphase::GetPotentialCollisions()
 		{
 			OBB& bounds2 = colliders[j]->GetBounds();
 
+			/*
 			float dist = distance(bounds.Position, bounds2.Position);
 			if (dist * dist > magnitude)
 				continue;
+			*/
 
 			Rigidbody* bRb = colliders[j]->GetRigidbody();
 			if (((aRb && !aRb->IsStatic()) || (bRb && !bRb->IsStatic())) &&

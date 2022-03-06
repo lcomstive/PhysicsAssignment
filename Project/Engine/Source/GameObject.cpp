@@ -8,7 +8,8 @@ using namespace Engine::Components;
 GameObject::GameObject(Scene* scene, string name) : m_Scene(scene), m_Name(name)
 {
 	m_Transform = AddComponent<Transform>();
-	m_Transform->SetParent(m_Scene->Root().GetTransform());
+	if(m_Scene)
+		m_Transform->SetParent(m_Scene->Root().GetTransform());
 }
 
 GameObject::GameObject(Transform* parent, string name) : GameObject(parent->GetGameObject(), name) { }
@@ -23,6 +24,7 @@ GameObject::GameObject(GameObject* parent, string name) : m_Name(name), m_Compon
 
 GameObject::~GameObject()
 {	
+	// Delete and remove attached components
 	for (auto& pair : m_Components)
 	{
 		pair.second->Removed();
@@ -37,29 +39,15 @@ Scene* GameObject::GetScene() { return m_Scene; }
 void GameObject::SetName(string name) { m_Name = name; }
 Transform* GameObject::GetTransform() { return m_Transform; }
 
-void GameObject::Draw()
-{
-	for (auto& pair : m_Components)
-		pair.second->Draw();
+// The below functions call a particular function on all attached components,
+// then recursively call on all child objects
 
-	for (Transform* child : m_Transform->GetChildren())
-		child->GetGameObject()->Draw();
-}
+#define COMPONENT_CALL(fnName, paramType, param) \
+								void GameObject::fnName(paramType param) { \
+									for(auto& pair : m_Components) pair.second->fnName(param); \
+									for(Transform* child : m_Transform->GetChildren()) child->GetGameObject()->fnName(param); \
+								}
 
-void GameObject::DrawGizmos()
-{
-	for (auto& pair : m_Components)
-		pair.second->DrawGizmos();
-
-	for (Transform* child : m_Transform->GetChildren())
-		child->GetGameObject()->DrawGizmos();
-}
-
-void GameObject::Update(float deltaTime)
-{
-	for (auto& pair : m_Components)
-		pair.second->Update(deltaTime);
-
-	for (Transform* child : m_Transform->GetChildren())
-		child->GetGameObject()->Update(deltaTime);
-}
+COMPONENT_CALL(Draw)
+COMPONENT_CALL(DrawGizmos)
+COMPONENT_CALL(Update, float, deltaTime)

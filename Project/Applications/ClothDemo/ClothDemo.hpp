@@ -8,7 +8,6 @@ class ClothDemo : public Engine::Application
 
 	void OnDraw() override;
 	void OnUpdate() override;
-	void OnDrawGizmos() override;
 
 public:
 	ClothDemo(Engine::ApplicationArgs args);

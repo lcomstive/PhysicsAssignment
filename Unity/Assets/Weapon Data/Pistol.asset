@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0f2cc1a23ccef1c4998a54b7a8623196, type: 3}
   m_Name: Pistol
   m_EditorClassIdentifier: 
-  Damage: 10
+  Damage: 15
   ClipSize: 6
   ReloadAnimation: {fileID: 0}
   ShootCooldown: 0.5
-  ForceApplied: 20
+  ForceApplied: 50
   RecoilAmount: 2.5
   RecoilRecoverySpeed: 1
   PulloutPositionCurve:

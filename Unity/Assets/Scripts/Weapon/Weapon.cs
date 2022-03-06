@@ -12,6 +12,8 @@ namespace LC.Weapons
 		[SerializeField] private InputActionReference m_ShootInput;
 		[SerializeField] private InputActionReference m_ReloadInput;
 
+		public bool CanShoot = true;
+
 		private int m_BulletsLeft;
 		private float m_ShootCooldown = 0.0f;
 
@@ -35,12 +37,12 @@ namespace LC.Weapons
 
 		public void Shoot()
 		{
-			if (m_ShootCooldown > 0.0f || m_BulletsLeft == 0)
+			if (m_ShootCooldown > 0.0f || m_BulletsLeft == 0 || !CanShoot)
 				return;
 
 			// Inherited function & events
 			Shoot(m_BarrelTip);
-			WeaponShot(this);
+			WeaponShot?.Invoke(this);
 
 			// Recoil
 

@@ -16,13 +16,14 @@ using namespace Engine::Graphics;
 using namespace Engine::Components;
 
 float ClothStiffness = 100.0f;
-float ClothSpacing = 0.5f;
 vec3 ClothInitialPos = { 0, 7.5f, 0 };
 
 #ifndef NDEBUG
 int ClothSize = 10;
+float ClothSpacing = 0.5f;
 #else
 int ClothSize = 20;
+float ClothSpacing = 0.25f; // >= 0.1f, as particles have a default size of 0.1 and will become erratic if touching in cloth formation
 #endif
 
 Cloth* m_Cloth = nullptr;
@@ -32,6 +33,7 @@ ClothDemo::ClothDemo(ApplicationArgs args) : Application(args) { }
 void ClothDemo::OnStart()
 {
 	srand(time(0));
+
 	// Set ImGui Font
 	ImGui::GetIO().Fonts->AddFontFromFileTTF((AssetDir + "Fonts/Source Sans Pro/SourceSansPro-Regular.ttf").c_str(), 16.0f);
 
@@ -168,9 +170,4 @@ void ClothDemo::OnDraw()
 			m_Cloth->SetBendSprings(ClothStiffness, 0.0f);
 	}
 	ImGui::End();
-}
-
-void ClothDemo::OnDrawGizmos()
-{
-
 }

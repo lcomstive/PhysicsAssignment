@@ -18,7 +18,7 @@ namespace LC.Weapons
 			
 			Rigidbody rb = spawned.GetComponent<Rigidbody>();
 			if(rb)
-				rb.AddForce(transform.forward * m_Data.ForceApplied, ForceMode.Impulse);
+				rb.AddForce(spawnTransform.forward * m_Data.ForceApplied, ForceMode.Impulse);
 		}
 	}
 }

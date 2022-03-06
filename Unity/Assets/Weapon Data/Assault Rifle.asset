@@ -16,7 +16,7 @@ MonoBehaviour:
   ClipSize: 5
   ReloadAnimation: {fileID: 0}
   ShootCooldown: 0.1
-  ForceApplied: 10
+  ForceApplied: 25
   RecoilAmount: 2.5
   RecoilRecoverySpeed: 1
   PulloutPositionCurve:

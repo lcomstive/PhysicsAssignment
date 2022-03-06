@@ -58,6 +58,7 @@ void Camera::Update(float deltaTime)
 
 	m_GlobalPosition = transform->GetGlobalPosition();
 
+	// Calculate relative directions
 	m_Forward = normalize(vec3
 		{
 			cos(transform->Rotation.y) * cos(transform->Rotation.x),

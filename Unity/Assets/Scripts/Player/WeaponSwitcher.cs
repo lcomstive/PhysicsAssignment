@@ -21,7 +21,7 @@ namespace LC.Player
 			foreach(Weapon weapon in m_Weapons)
 				weapon.gameObject.SetActive(false);
 
-			m_WeaponChangeInput.action.performed	+= OnWeaponChangePerformed;
+			m_WeaponChangeInput.action.performed += OnWeaponChangePerformed;
 
 			SelectWeapon(0);
 		}
@@ -63,6 +63,7 @@ namespace LC.Player
 			if(!weapon || !weapon.isActiveAndEnabled)
 				yield return null; // Exit
 
+			weapon.CanShoot = false;
 			m_CanSwitchWeapon = false;
 			Vector3 weaponEuler = weapon.transform.localRotation.eulerAngles;
 
@@ -85,6 +86,7 @@ namespace LC.Player
 				time += Time.deltaTime;
 			}
 
+			weapon.CanShoot = true;
 			m_CanSwitchWeapon = true;
 		}
 

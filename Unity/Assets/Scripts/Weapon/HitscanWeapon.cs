@@ -10,10 +10,8 @@ namespace LC.Weapons
 
 		protected override void Shoot(Transform spawnTransform)
 		{
-			// if(!Physics.Raycast(spawnTransform.position, spawnTransform.forward, out RaycastHit hit, m_HitscanRange))
-
 			Transform cam = Camera.main.transform;
-			if(!Physics.Raycast(cam.position, cam.forward, out RaycastHit hit, m_HitscanRange))
+			if(!Physics.Raycast(cam.position, cam.forward, out RaycastHit hit, m_HitscanRange, 1, QueryTriggerInteraction.Ignore))
 				return;
 
 			IHittable hittable = hit.collider.GetComponent<IHittable>();

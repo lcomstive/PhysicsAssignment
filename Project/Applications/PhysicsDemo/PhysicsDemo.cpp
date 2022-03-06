@@ -15,11 +15,11 @@
 
 #pragma warning(disable : 4244)
 
-#define TOWER_DEMO			0
+#define TOWER_DEMO			1
 #define TRIGGER_DEMO		0
 #define ROPE_DEMO			0
 #define PARTICLE_DEMO		0
-#define OCTOPUSSS			1
+#define OCTOPUSSS			0
 
 #define DRAW_GRID			0
 #define CAMERA_RAY_FORCE	1
@@ -63,6 +63,7 @@ GameObject* OctopusBody = nullptr;
 #endif
 
 #if TOWER_DEMO
+// Tower is generated in 3D: TowerSize x TowerSize x TowerSize
 #ifdef NDEBUG
 int TowerSize = 8;
 #else
@@ -87,6 +88,7 @@ void PhysicsDemo::OnStart()
 
 void PhysicsDemo::ResetScene()
 {
+	// Clean up any pre-existing resources
 	for (GameObject* go : CreatedObjects)
 		delete go;
 	CreatedObjects.clear();
@@ -110,6 +112,7 @@ void PhysicsDemo::ResetScene()
 	meshInfo.Material.Albedo = { 1, 0, 0, 1 };
 
 #if TOWER_DEMO
+	// Generate tower(s)
 	for (int x = 0; x < TowerSize; x++)
 	{
 		for (int y = 0; y < TowerSize; y++)
@@ -126,6 +129,7 @@ void PhysicsDemo::ResetScene()
 				rb->SetFriction(0.1f);
 				rb->SetRestitution(0.35f);
 
+				// Generate either sphere or cube, randomly
 				bool sphere = rand() % 2 == 0;
 				if (sphere)
 				{
@@ -138,6 +142,7 @@ void PhysicsDemo::ResetScene()
 					BoxCollider* bCollider = go->AddComponent<BoxCollider>();
 				}
 
+				meshInfo.Material.Albedo = { Random(0.5f, 1.0f), Random(0.5f, 1.0f), Random(0.5f, 1.0f), 1.0f };
 				go->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 
 				CreatedObjects.emplace_back(go);
@@ -180,12 +185,14 @@ void PhysicsDemo::ResetScene()
 	meshInfo.Material.Albedo = { 0.5f, 0.5f, 0.5f, 1.0f };
 	for (int i = 0; i < RopeLength; i++)
 	{
+		// Create rope visual
 		GameObject* rope = new GameObject(CurrentScene(), "Rope " + to_string(i));
 		rope->GetTransform()->Position = { i * RopeRestingLength, 0, 0.0f };
 		rope->GetTransform()->Scale = vec3(0.1f);
 		rope->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 		CreatedObjects.emplace_back(rope);
 
+		// Create rope particle
 		Particle* particle = rope->AddComponent<Particle>();
 		particle->SetMass(RopeMass);
 		if (i == 0)
@@ -193,6 +200,7 @@ void PhysicsDemo::ResetScene()
 
 		if (previousParticle)
 		{
+			// Attach particle to previously created particle in a chain-like fashion
 			Spring* spring = rope->AddComponent<Spring>();
 			spring->SetBodies(previousParticle, particle);
 			spring->SetConstants(RopeStiffness, RopeDampingFactor);
@@ -223,12 +231,14 @@ void PhysicsDemo::ResetScene()
 		float z = sin((leg / (float)OctopusLegs) * radians(360.0f));
 		for (int i = 0; i < RopeLength; i++)
 		{
+			// Create visual
 			GameObject* rope = new GameObject(i == 0 ? OctopusBody : &CurrentScene()->Root(), "Rope " + to_string(i) + " " + to_string(leg));
 			rope->GetTransform()->Position = { x, i * -RopeRestingLength, z };
 			rope->GetTransform()->Scale = vec3(0.1f);
 			rope->AddComponent<MeshRenderer>()->Meshes = { meshInfo };
 			CreatedObjects.emplace_back(rope);
 
+			// Create particle
 			Particle* particle = rope->AddComponent<Particle>();
 			particle->SetMass(RopeMass);
 			if (i == 0)
@@ -236,6 +246,7 @@ void PhysicsDemo::ResetScene()
 
 			if (previousParticle)
 			{
+				// Attach particle to previously created particle, in chain-like fashion
 				Spring* spring = rope->AddComponent<Spring>();
 				spring->SetBodies(previousParticle, particle);
 				spring->SetConstants(RopeStiffness, RopeDampingFactor);
@@ -293,6 +304,7 @@ void PhysicsDemo::ResetScene()
 #else
 	const int ParticleTowerSize = 8;
 #endif
+	// Create tower(s)
 	meshInfo.Mesh = Mesh::Sphere();
 	for (float x = ParticleTowerSize / -2.0f; x < ParticleTowerSize / 2.0f; x++)
 	{
@@ -319,6 +331,7 @@ void PhysicsDemo::ResetScene()
 		}
 	}
 
+	// Generate spaced grid of obstacles
 	const int ObstacleWidth = 6;
 	const float ObstacleSize = 0.5f;
 	const float ObstacleSpacing = 1.5f;
@@ -365,6 +378,7 @@ void PhysicsDemo::OnUpdate()
 		CurrentScene()->GetPhysics().TogglePause();
 
 #if OCTOPUSSS
+	// Octopus movement
 	const float OctopusSpeed = 5.0f;
 	if (Input::IsKeyDown(GLFW_KEY_LEFT))		OctopusBody->GetTransform()->Position += vec3{ -1,  0,  0 } * OctopusSpeed * Renderer::GetDeltaTime();
 	if (Input::IsKeyDown(GLFW_KEY_RIGHT))		OctopusBody->GetTransform()->Position += vec3{  1,  0,  0 } * OctopusSpeed * Renderer::GetDeltaTime();
@@ -377,6 +391,7 @@ void PhysicsDemo::OnUpdate()
 #if CAMERA_RAY_FORCE
 	Camera* camera = Camera::GetMainCamera();
 
+	// Shoot ray from camera, if hit's an object apply force in direction of ray
 	Ray ray;
 	ray.Origin = camera->GetTransform()->Position;
 	ray.Direction = camera->GetForwardDirection();
@@ -385,10 +400,12 @@ void PhysicsDemo::OnUpdate()
 
 	if (hitCollider && Input::IsKeyPressed(GLFW_KEY_F))
 	{
+		// Test rigidbody
 		Rigidbody* rb = hitCollider->GetRigidbody();
 		if (rb)
 			rb->ApplyForce(ray.Direction * RayForce, Hit.Point, ForceMode::Impulse);
 
+		// Test particle
 		Particle* particle = hitCollider->GetGameObject()->GetComponent<Particle>();
 		if (particle)
 			particle->ApplyForce(ray.Direction * RayForce, ForceMode::Impulse);
@@ -398,6 +415,8 @@ void PhysicsDemo::OnUpdate()
 
 void PhysicsDemo::OnDraw()
 {
+	// Draw GUI
+
 	static bool controlsWindowOpen = true;
 	if (ImGui::Begin("Controls", &controlsWindowOpen))
 	{
@@ -503,6 +522,7 @@ void PhysicsDemo::OnDraw()
 void PhysicsDemo::OnDrawGizmos()
 {
 #if DRAW_GRID
+	// Draw grid as gizmo
 	if (!gridMesh)
 		gridMesh = Mesh::Grid(GridSize);
 
@@ -511,6 +531,7 @@ void PhysicsDemo::OnDrawGizmos()
 #endif
 
 #if CAMERA_RAY_FORCE
+	// Draw camera raycast hit
 	if (Hit.Distance > 0)
 	{
 		Gizmos::Colour = { 0, 1, 1, 1 };

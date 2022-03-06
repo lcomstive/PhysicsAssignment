@@ -1,3 +1,11 @@
+/**
+*
+* THIS CLASS IS BROKEN AND UNUSED.
+* 
+* LEFT IN PROJECT FOR FUTURE REPAIRS.
+*
+**/
+
 #pragma once
 #include <Engine/Physics/Octree.hpp>
 #include <Engine/Physics/Broadphase/Broadphase.hpp>

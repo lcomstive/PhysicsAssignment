@@ -15,8 +15,6 @@ namespace Engine::Components
 
 		Physics::OBB& GetOBB();
 
-		void DrawGizmos() override;
-
 		Physics::OBB& GetBounds() override;
 		bool LineTest(Physics::Line& line) override;
 		bool IsPointInside(glm::vec3& point) const override;
@@ -27,6 +25,9 @@ namespace Engine::Components
 		bool CheckCollision(BoxCollider* other) override;
 		bool CheckCollision(PlaneCollider* other) override;
 		bool CheckCollision(SphereCollider* other) override;
+
+	protected:
+		void DrawGizmos() override;
 
 	private:
 		Physics::OBB m_Bounds;

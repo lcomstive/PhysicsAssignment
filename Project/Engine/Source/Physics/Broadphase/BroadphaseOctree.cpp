@@ -1,3 +1,11 @@
+/**
+*
+* THIS CLASS IS BROKEN AND UNUSED.
+*
+* LEFT IN PROJECT FOR FUTURE REPAIRS.
+*
+**/
+
 #include <Engine/Graphics/Gizmos.hpp>
 #include <Engine/Components/Physics/Rigidbody.hpp>
 #include <Engine/Physics/Broadphase/BroadphaseOctree.hpp>

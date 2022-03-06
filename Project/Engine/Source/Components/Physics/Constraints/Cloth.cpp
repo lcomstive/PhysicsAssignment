@@ -261,6 +261,7 @@ void Cloth::Draw()
 	if (!m_Mesh)
 		return;
 
+	// Update mesh vertex positions
 	unsigned int i = 0;
 	auto& verts = m_Mesh->GetVertices();
 	for (unsigned int x = 0; x < m_ClothSize - 1; x++)
@@ -283,5 +284,6 @@ void Cloth::Draw()
 
 	m_Mesh->SetData(verts);
 
+	// Draw mesh
 	Renderer::Submit(m_Mesh, Material, GetTransform());
 }

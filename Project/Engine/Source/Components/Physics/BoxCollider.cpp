@@ -38,11 +38,13 @@ void BoxCollider::DrawGizmos()
 		m_Bounds.Orientation);
 
 	/*
+	// Vertices
 	Gizmos::Colour = { 1, 0, 1, 0.75f };
 	vector<vec3>& vertices = m_Bounds.GetVertices();
 	for (vec3& vertex : vertices)
 		Gizmos::DrawSphere(vertex, 0.05f);
 
+	// Edges
 	Gizmos::Colour = { 1, 1, 0, 0.75f };
 	vector<Line>& edges = m_Bounds.GetEdges();
 	for (Line& edge : edges)
@@ -127,6 +129,7 @@ void BoxCollider::CalculateInverseTensor()
 	float y2 = size.y * size.y;
 	float z2 = size.z * size.z;
 
+	// Box inverse tensor
 	m_InverseTensor = inverse(mat4(
 		(y2 + z2) * mass * fraction, 0, 0, 0,
 		0, (x2 + z2) * mass * fraction, 0, 0,
